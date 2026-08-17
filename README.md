@@ -1,7 +1,7 @@
 # Comprehensive Data Analytics & Engineering Pipeline in Microsoft Fabric
 
 ## 📌 Project Overview
-This repository serves as a live, automated development vault hosting an end-to-end data analytics architecture built within **Microsoft Fabric**. The project tracks the entire lifecycle of a modern data stack—from raw data ingestion to production-ready analytical insights.
+This repository serves as a live, automated development vault hosting an end-to-end data analytics architecture built within **Microsoft Fabric**. The project tracks the entire lifecycle of a modern data stack—from raw data ingestion to production-ready analytical insights. Utilizing Azure DevOps for enterprise CI/CD branch deployments, and syncing artifacts to this public GitHub repository for version control tracking.
 
 ## 🛠️ Tech Stack & Infrastructure
 * **Orchestration & Storage:** Microsoft Fabric (Lakehouse architecture, Data Pipelines)
