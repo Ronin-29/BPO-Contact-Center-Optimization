@@ -1,19 +1,52 @@
-# Comprehensive Data Analytics & Engineering Pipeline in Microsoft Fabric
+# BPO Contact Center Optimization Pipeline
 
-## 📌 Project Overview
-This repository serves as a live, automated development vault hosting an end-to-end data analytics architecture built within **Microsoft Fabric**. The project tracks the entire lifecycle of a modern data stack—from raw data ingestion to production-ready analytical insights. Utilizing Azure DevOps for enterprise CI/CD branch deployments, and syncing artifacts to this public GitHub repository for version control tracking.
+An enterprise-grade, end-to-end data engineering and analytics solution built on Microsoft Fabric. This project processes multi-year customer interaction data using a Medallion Architecture, optimizing query performance via Direct Lake mode, and enforcing robust data governance.
 
-## 🛠️ Tech Stack & Infrastructure
-* **Orchestration & Storage:** Microsoft Fabric (Lakehouse architecture, Data Pipelines)
-* **Version Control & DevOps:** GitHub (Automated workspace synchronization, asset versioning)
-* **Data Transformation:** PySpark / Python Notebooks, SQL
-* **Business Intelligence:** Power BI (DirectLake semantic modeling and reporting)
+## 🏗️ Architecture Overview
+The pipeline follows a structured Medallion Architecture managed natively via Microsoft Fabric Git Integration:
+* **Bronze Layer:** Parameterized incremental ingestion of raw operational files into Delta tables using Data Factory.
+* **Silver Layer:** Idempotent cleaning, data-quality auditing, and automated quarantine routing using PySpark.
+* **Gold Layer:** Dimensional modeling transforming cleaned interaction logs into a high-performance Star Schema.
+* **Semantic Layer:** Direct Lake semantic model with measure-only DAX expressions and Row-Level Security (RLS).
 
-## 🏗️ Architecture Blueprint (Roadmap)
-1. **Ingestion Layer:** Extracting raw business data into the Fabric Lakehouse bronze layer using automated Data Pipelines.
-2. **Transformation Layer (Medallion Architecture):** Cleaning, partitioning, and modeling data using PySpark notebooks into silver and gold delta tables.
-3. **Serving Layer:** Building high-performance DirectLake semantic models optimized for executive-level business decisions.
+---
 
-## 🚀 How to Review This Portfolio
-* Open the directories above to review the underlying JSON schema structures and code definitions generated directly by Microsoft Fabric's Git integration engine.
-* Review the commit history to track the iterative development and version control cycle of this deployment.
+## 🛠️ Tech Stack & Core Tools
+* **Orchestration & Ingestion:** Microsoft Fabric Data Factory (Pipelines & Copy Activities)
+* **Compute & Engineering:** Apache Spark (PySpark Notebooks)
+* **Storage Engine:** Delta Lake (Parquet format)
+* **Modeling & Security:** Tabular Editor 3 & TMDL (Tabular Model Definition Language)
+* **Performance Tuning:** DAX Studio
+* **DevOps:** Fabric Git Integration & Deployment Pipelines
+
+---
+
+## 📈 Project Status & Metrics Log
+*This section serves as a living log and will be populated with empirical results during pipeline execution.*
+
+### Phase 0: Data Augmentation
+* **Random Reproducibility Seed:** `SEED = 42`
+* **Target Synthetic Row Count:** 180,000 rows (3-year spine)
+
+### Phase 2: Data Quality & Cleaning
+* **Idempotency Method:** Delta Lake `MERGE` statement
+* **Quarantine Rate:** *[Pending Execution - To be updated with exact number of isolated rows]*
+
+### Phase 4: Diagnostic Performance Profiling
+*Performance benchmarks captured directly via DAX Studio connection to the Direct Lake semantic model.*
+
+| Metric Profile | Formula Engine (FE) % | Storage Engine (SE) % | Total Duration (ms) |
+| :--- | :--- | :--- | :--- |
+| **Cold Cache Run** | *[Pending]* | *[Pending]* | *[Pending]* |
+| **Warm Cache Run** | *[Pending]* | *[Pending]* | *[Pending]* |
+
+---
+
+## 📁 Repository Structure
+
+├── .data-factory/        # Data Factory pipeline JSON templates
+├── .fabric-notebooks/   # PySpark notebooks (Augmentation, Silver, Gold)
+├── .gold-layer/         # Delta table Star Schema definitions
+├── .semantic-model/     # TMDL semantic model definitions
+├── .diagnostics/        # DAX Studio benchmark trace outputs
+└── README.md
