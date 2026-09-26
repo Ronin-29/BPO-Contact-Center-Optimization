@@ -40,6 +40,14 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 | **Cold Cache Run** | *[Pending]* | *[Pending]* | *[Pending]* |
 | **Warm Cache Run** | *[Pending]* | *[Pending]* | *[Pending]* |
 
+## Build Progress
+- [x] Phase 0: Synthetic data augmentation
+- [x] Phase 1: Bronze ingestion pipeline
+- [ ] Phase 2: Silver cleaning
+- [ ] Phase 2B: Gold star schema
+- [ ] Phase 3: Direct Lake semantic model + RLS
+- [ ] Phase 4: Performance profiling
+- [ ] Phase 5: CI/CD & deployment      
 ---
 
 ## 📁 Repository Structure
