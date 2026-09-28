@@ -28,20 +28,10 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 * **Random Reproducibility Seed:** `SEED = 42`
 * **Target Synthetic Row Count:** 180,000 rows (3-year spine)
 
-### Phase 2: Data Quality & Cleaning
-* **Idempotency Method:** Delta Lake `MERGE` statement
-* **Quarantine Rate:** *[Pending Execution - To be updated with exact number of isolated rows]*
-
-### Phase 4: Diagnostic Performance Profiling
-*Performance benchmarks captured directly via DAX Studio connection to the Direct Lake semantic model.*
-
-| Metric Profile | Formula Engine (FE) % | Storage Engine (SE) % | Total Duration (ms) |
-| :--- | :--- | :--- | :--- |
-| **Cold Cache Run** | *[Pending]* | *[Pending]* | *[Pending]* |
-| **Warm Cache Run** | *[Pending]* | *[Pending]* | *[Pending]* |
+### Phase 2: 
 
 ## Build Progress
-- [] Phase 0: Synthetic data augmentation
+- [X] Phase 0: Synthetic data augmentation
 - [] Phase 1: Bronze ingestion pipeline
 - [] Phase 2: Silver cleaning
 - [] Phase 2B: Gold star schema
