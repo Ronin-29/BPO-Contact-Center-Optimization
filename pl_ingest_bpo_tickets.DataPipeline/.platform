@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "DataPipeline",
+    "displayName": "pl_ingest_bpo_tickets"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "0bd18233-0683-8c39-4bbe-26a1418c4193"
+  }
+}
