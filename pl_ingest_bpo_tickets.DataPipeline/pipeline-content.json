@@ -44,8 +44,8 @@
             "datasetSettings": {
               "type": "LakehouseTable",
               "typeProperties": {
-                "schema": "dbo",
-                "table": "bronze_customer_tickets"
+                "schema": "",
+                "table": "stg_customer_tickets"
               },
               "schema": [],
               "linkedService": {
@@ -203,7 +203,7 @@
           "secureInput": false,
           "secureOutput": false
         },
-        "name": "cp_http_to_bronze",
+        "name": "cp_http_to_staging",
         "dependsOn": []
       }
     ],
