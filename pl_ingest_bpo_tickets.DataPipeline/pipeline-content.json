@@ -250,6 +250,214 @@
             ]
           }
         ]
+      },
+      {
+        "type": "Copy",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource",
+            "sqlReaderQuery": "SELECT *\nFROM dbo.stg_customer_tickets\nWHERE try_cast(sim_date AS DATE) > '@{activity('lkp_get_watermark').output.firstRow.last_loaded_date}'",
+            "partitionOption": "None",
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "schema": [],
+              "connectionSettings": {
+                "name": "BPO_Optimization_Lakehouse",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "cc861563-ddb4-831f-4486-bf6e3850ce3e",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Tables"
+                  },
+                  "externalReferences": {
+                    "connection": "52e800b4-66f3-4a66-82a3-155bce1cea5c"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "sink": {
+            "type": "LakehouseTableSink",
+            "tableActionOption": "Append",
+            "applyVOrder": false,
+            "enableTimestampNtz": false,
+            "datasetSettings": {
+              "type": "LakehouseTable",
+              "typeProperties": {
+                "schema": "dbo",
+                "table": "bronze_customer_tickets"
+              },
+              "schema": [],
+              "connectionSettings": {
+                "name": "BPO_Optimization_Lakehouse",
+                "properties": {
+                  "type": "Lakehouse",
+                  "typeProperties": {
+                    "artifactId": "cc861563-ddb4-831f-4486-bf6e3850ce3e",
+                    "workspaceId": "00000000-0000-0000-0000-000000000000",
+                    "rootFolder": "Tables"
+                  },
+                  "externalReferences": {
+                    "connection": "2865216a-9b20-4c88-b55b-5b21772bae70"
+                  },
+                  "annotations": []
+                }
+              },
+              "annotations": []
+            }
+          },
+          "translator": {
+            "type": "TabularTranslator",
+            "mappings": [
+              {
+                "source": {
+                  "name": "Interaction_ID",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Interaction_ID",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Timestamp",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Timestamp",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Agent_ID",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Agent_ID",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Channel",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Channel",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Queue_Name",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Queue_Name",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Talk_Time_Sec",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Talk_Time_Sec",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Hold_Time_Sec",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Hold_Time_Sec",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "CSAT_Rating",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "CSAT_Rating",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "Status",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "Status",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "sim_date",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "sim_date",
+                  "physicalType": "string"
+                }
+              },
+              {
+                "source": {
+                  "name": "rand_pick",
+                  "type": "String",
+                  "physicalType": "varchar"
+                },
+                "sink": {
+                  "name": "rand_pick",
+                  "physicalType": "string"
+                }
+              }
+            ],
+            "typeConversion": true,
+            "typeConversionSettings": {
+              "allowDataTruncation": true,
+              "treatBooleanAsNumber": false
+            }
+          },
+          "enableStaging": false
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "cp_staging_to_bronze",
+        "dependsOn": [
+          {
+            "activity": "lkp_get_watermark",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
