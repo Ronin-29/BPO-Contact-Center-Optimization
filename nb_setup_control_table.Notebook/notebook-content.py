@@ -78,3 +78,27 @@ display(spark.table("control.load_log"))
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+def update_watermark(new_last_loaded_date, rows_loaded, status, environment, load_id):
+    spark.sql(f"""
+    MERGE INTO control.load_log AS target
+    USING (SELECT '{load_id}' AS load_id,
+                  'bronze_customer_tickets' AS source_table,
+                  DATE'{new_last_loaded_date}' AS last_loaded_date,
+                  {rows_loaded} AS rows_loaded,
+                  '{status}' AS status,
+                  '{environment}' AS environment,
+                  current_timestamp() AS loaded_at) AS source
+    ON target.source_table = source.source_table
+    WHEN MATCHED THEN UPDATE SET *
+    WHEN NOT MATCHED THEN INSERT *
+    """)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
