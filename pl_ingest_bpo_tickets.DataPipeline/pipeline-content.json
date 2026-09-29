@@ -205,6 +205,51 @@
         },
         "name": "cp_http_to_staging",
         "dependsOn": []
+      },
+      {
+        "type": "Lookup",
+        "typeProperties": {
+          "source": {
+            "type": "LakehouseTableSource"
+          },
+          "datasetSettings": {
+            "type": "LakehouseTable",
+            "typeProperties": {
+              "schema": "control",
+              "table": "load_log"
+            },
+            "schema": [],
+            "linkedService": {
+              "name": "BPO_Optimization_Lakehouse",
+              "properties": {
+                "type": "Lakehouse",
+                "typeProperties": {
+                  "artifactId": "cc861563-ddb4-831f-4486-bf6e3850ce3e",
+                  "workspaceId": "00000000-0000-0000-0000-000000000000",
+                  "rootFolder": "Tables"
+                },
+                "annotations": []
+              }
+            },
+            "annotations": []
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "lkp_get_watermark",
+        "dependsOn": [
+          {
+            "activity": "cp_http_to_staging",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
