@@ -103,9 +103,12 @@ def update_watermark(new_last_loaded_date, rows_loaded, status, environment, loa
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# CELL ********************
+# PARAMETERS CELL ********************
 
-update_watermark('1900-01-01', 0, 'initial', 'dev', 'seed')
+# Parameters cell — values will be overridden by the pipeline at run time
+run_load_date = "1900-01-01"
+run_environment = "dev"
+run_id = "manual-test"
 
 # METADATA ********************
 
@@ -116,7 +119,24 @@ update_watermark('1900-01-01', 0, 'initial', 'dev', 'seed')
 
 # CELL ********************
 
-spark.sql("DELETE FROM dbo.bronze_customer_tickets")
+newest_date_row = spark.sql("""
+    SELECT MAX(try_cast(sim_date AS DATE)) AS newest_date
+    FROM dbo.stg_customer_tickets
+""").collect()[0]
+
+rows_loaded_count = spark.sql("""
+    SELECT COUNT(*) AS cnt
+    FROM dbo.stg_customer_tickets
+    WHERE try_cast(sim_date AS DATE) > DATE('{}')
+""".format(run_load_date)).collect()[0]["cnt"]
+
+update_watermark(
+    str(newest_date_row["newest_date"]),
+    rows_loaded_count,
+    "success",
+    run_environment,
+    run_id
+)
 
 # METADATA ********************
 
