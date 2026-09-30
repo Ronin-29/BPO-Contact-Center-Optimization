@@ -166,3 +166,27 @@ display(spark.sql("SELECT COUNT(*) AS bronze_rows FROM dbo.bronze_customer_ticke
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+run_load_date = "1900-01-01"
+run_environment = "dev"
+run_id = "manual-test"
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+display(spark.table("control.load_log"))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
