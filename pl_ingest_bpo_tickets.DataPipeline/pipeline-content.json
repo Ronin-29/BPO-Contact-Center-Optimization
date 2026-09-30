@@ -469,23 +469,32 @@
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "run_load_date": {
-              "value": "@activity('lkp_get_watermark').output.firstRow.last_loaded_date",
+              "value": {
+                "value": "@activity('lkp_get_watermark').output.firstRow.last_loaded_date",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "run_environment": {
-              "value": "@pipeline().parameters.p_environment",
+              "value": {
+                "value": "@pipeline().parameters.p_environment",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "run_id": {
-              "value": "@pipeline().RunId",
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
               "type": "string"
             }
           }
         },
         "policy": {
           "timeout": "0.12:00:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
           "secureInput": false,
           "secureOutput": false
         },

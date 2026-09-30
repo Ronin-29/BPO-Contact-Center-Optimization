@@ -70,17 +70,6 @@ if spark.table("control.load_log").count() == 0:
 
 # CELL ********************
 
-display(spark.table("control.load_log"))
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
 def update_watermark(new_last_loaded_date, rows_loaded, status, environment, load_id):
     spark.sql(f"""
     MERGE INTO control.load_log AS target
@@ -137,28 +126,6 @@ update_watermark(
     run_environment,
     run_id
 )
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-display(spark.table("control.load_log"))
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-display(spark.sql("SELECT COUNT(*) AS bronze_rows FROM dbo.bronze_customer_tickets"))
 
 # METADATA ********************
 

@@ -232,3 +232,158 @@ print("Rows written:", df_check.count())
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# MARKDOWN ********************
+
+# **Phase 0: original synthetic data" ends and "New batch: incremental load demo**
+
+# CELL ********************
+
+from pyspark.sql import functions as F
+
+SEED = 99  # different from Phase 0's seed, since this is unrelated new data
+
+df_batch = spark.range(0, 2000).select(
+    F.concat(F.lit("TICK-B"), F.col("id").cast("string")).alias("Interaction_ID"),
+    F.date_format(
+        F.expr("date_add('2027-01-01', cast(rand({}) * 30 as int))".format(SEED)),
+        "yyyy-MM-dd HH:mm:ss"
+    ).alias("Timestamp"),
+    F.concat(F.lit("Agent_"), (F.rand(SEED) * 50).cast("int").cast("string")).alias("Agent_ID"),
+    F.array(F.lit("Voice"), F.lit("Chat"), F.lit("Email"))[(F.rand(SEED) * 3).cast("int")].alias("Channel"),
+    F.array(F.lit("Billing"), F.lit("Tech Support"), F.lit("General"))[(F.rand(SEED) * 3).cast("int")].alias("Queue_Name"),
+    (F.rand(SEED) * 1000 + 60).cast("int").cast("string").alias("Talk_Time_Sec"),
+    (F.rand(SEED) * 200).cast("int").cast("string").alias("Hold_Time_Sec"),
+    ((F.rand(SEED) * 5).cast("int") + 1).cast("string").alias("CSAT_Rating"),
+    F.array(F.lit("Resolved"), F.lit("Open"), F.lit("Dropped"))[(F.rand(SEED) * 3).cast("int")].alias("Status"),
+    F.date_format(
+        F.expr("date_add('2027-01-01', cast(rand({}) * 30 as int))".format(SEED)),
+        "yyyy-MM-dd"
+    ).alias("sim_date"),
+    F.rand(SEED).cast("string").alias("rand_pick")
+)
+
+df_batch.coalesce(1).write.mode("overwrite").option("header", True).csv("Files/landing/new_batch_raw/")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+display(spark.read.option("header", True).csv("Files/landing/new_batch_raw/"))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+print(spark.read.option("header", True).csv("Files/landing/new_batch_raw/").count())
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+notebookutils.fs.rm("Files/landing/new_batch_raw/", True)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+display(notebookutils.fs.ls("Files/landing/new_batch_raw/"))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC SELECT COUNT(*) AS staging_rows FROM dbo.stg_customer_tickets;
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC SELECT COUNT(*) AS bronze_rows FROM dbo.bronze_customer_tickets;
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC SELECT * FROM control.load_log;
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql 
+# MAGIC SELECT
+# MAGIC   CASE WHEN Interaction_ID LIKE 'TICK-B%' THEN 'new_batch' ELSE 'original' END AS source_type,
+# MAGIC   COUNT(*) AS row_count
+# MAGIC FROM dbo.bronze_customer_tickets
+# MAGIC GROUP BY CASE WHEN Interaction_ID LIKE 'TICK-B%' THEN 'new_batch' ELSE 'original' END;
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC SELECT Interaction_ID, COUNT(*) AS times_seen
+# MAGIC FROM dbo.bronze_customer_tickets
+# MAGIC WHERE Interaction_ID NOT LIKE 'TICK-B%'
+# MAGIC GROUP BY Interaction_ID
+# MAGIC HAVING COUNT(*) > 1
+# MAGIC ORDER BY times_seen DESC;
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# MARKDOWN ********************
+
