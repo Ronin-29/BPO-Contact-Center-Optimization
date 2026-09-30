@@ -256,7 +256,10 @@
         "typeProperties": {
           "source": {
             "type": "LakehouseTableSource",
-            "sqlReaderQuery": "SELECT *\nFROM dbo.stg_customer_tickets\nWHERE try_cast(sim_date AS DATE) > '@{activity('lkp_get_watermark').output.firstRow.last_loaded_date}'",
+            "sqlReaderQuery": {
+              "value": "SELECT *\nFROM dbo.stg_customer_tickets\nWHERE try_cast(sim_date AS DATE) > '@{activity('lkp_get_watermark').output.firstRow.last_loaded_date}'",
+              "type": "Expression"
+            },
             "partitionOption": "None",
             "datasetSettings": {
               "type": "LakehouseTable",
@@ -453,6 +456,43 @@
         "dependsOn": [
           {
             "activity": "lkp_get_watermark",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "4ddf0bff-5743-af20-4b0e-45580bd56241",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "run_load_date": {
+              "value": "@activity('lkp_get_watermark').output.firstRow.last_loaded_date",
+              "type": "string"
+            },
+            "run_environment": {
+              "value": "@pipeline().parameters.p_environment",
+              "type": "string"
+            },
+            "run_id": {
+              "value": "@pipeline().RunId",
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_update_watermark",
+        "dependsOn": [
+          {
+            "activity": "cp_staging_to_bronze",
             "dependencyConditions": [
               "Completed"
             ]
