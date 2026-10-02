@@ -246,7 +246,7 @@
           {
             "activity": "cp_http_to_staging",
             "dependencyConditions": [
-              "Completed"
+              "Succeeded"
             ]
           }
         ]
@@ -457,7 +457,7 @@
           {
             "activity": "lkp_get_watermark",
             "dependencyConditions": [
-              "Completed"
+              "Succeeded"
             ]
           }
         ]
@@ -503,7 +503,247 @@
           {
             "activity": "cp_staging_to_bronze",
             "dependencyConditions": [
-              "Completed"
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "3f15b1a8-3a86-a68a-4642-c76f2ce8c250",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "pipeline_name": {
+              "value": "@pipeline().PipelineName",
+              "type": "string"
+            },
+            "run_id": {
+              "value": "@pipeline().RunId",
+              "type": "string"
+            },
+            "failed_activity": {
+              "value": "cp_http_to_staging",
+              "type": "string"
+            },
+            "error_message": {
+              "value": {
+                "value": "@activity('cp_http_to_staging').error.message",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "alert_http_to_staging",
+        "dependsOn": [
+          {
+            "activity": "cp_http_to_staging",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Lookup1 failed. See control.pipeline_alerts.",
+          "errorCode": "LOOKUP_FAILED"
+        },
+        "name": "fail_http_to_staging",
+        "dependsOn": [
+          {
+            "activity": "alert_http_to_staging",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "3f15b1a8-3a86-a68a-4642-c76f2ce8c250",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "pipeline_name": {
+              "value": "@pipeline().PipelineName",
+              "type": "string"
+            },
+            "run_id": {
+              "value": "@pipeline().RunId",
+              "type": "string"
+            },
+            "failed_activity": {
+              "value": "lkp_get_watermark",
+              "type": "string"
+            },
+            "error_message": {
+              "value": {
+                "value": "@activity('lkp_get_watermark').error.message",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "alert_get_watermark",
+        "dependsOn": [
+          {
+            "activity": "lkp_get_watermark",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Lookup1 failed. See control.pipeline_alerts.",
+          "errorCode": "LOOKUP_FAILED"
+        },
+        "name": "fail_get_watermark",
+        "dependsOn": [
+          {
+            "activity": "alert_get_watermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "3f15b1a8-3a86-a68a-4642-c76f2ce8c250",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "pipeline_name": {
+              "value": "@pipeline().PipelineName",
+              "type": "string"
+            },
+            "run_id": {
+              "value": "@pipeline().RunId",
+              "type": "string"
+            },
+            "failed_activity": {
+              "value": "nb_update_watermark",
+              "type": "string"
+            },
+            "error_message": {
+              "value": {
+                "value": "@activity('nb_update_watermark').error.message",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "alert_update_watermark",
+        "dependsOn": [
+          {
+            "activity": "nb_update_watermark",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Lookup1 failed. See control.pipeline_alerts.",
+          "errorCode": "LOOKUP_FAILED"
+        },
+        "name": "fail_update_watermark",
+        "dependsOn": [
+          {
+            "activity": "alert_update_watermark",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "3f15b1a8-3a86-a68a-4642-c76f2ce8c250",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "pipeline_name": {
+              "value": "@pipeline().PipelineName",
+              "type": "string"
+            },
+            "run_id": {
+              "value": "@pipeline().RunId",
+              "type": "string"
+            },
+            "failed_activity": {
+              "value": "cp_staging_to_bronze",
+              "type": "string"
+            },
+            "error_message": {
+              "value": {
+                "value": "@activity('cp_staging_to_bronze').error.message",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.12:00:00",
+          "retry": 2,
+          "retryIntervalInSeconds": 60,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "alert_staging_to_bronze",
+        "dependsOn": [
+          {
+            "activity": "cp_staging_to_bronze",
+            "dependencyConditions": [
+              "Failed"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Lookup1 failed. See control.pipeline_alerts.",
+          "errorCode": "LOOKUP_FAILED"
+        },
+        "name": "fail_staging_to_bronze",
+        "dependsOn": [
+          {
+            "activity": "alert_staging_to_bronze",
+            "dependencyConditions": [
+              "Succeeded"
             ]
           }
         ]
