@@ -46,10 +46,17 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - Dataflow Gen2 is a low-code Power Query tool for shaping data. It cannot easily read a watermark, use it as a filter, and update it afterwards in one controlled flow.
 - The pipeline moves and tracks the data. Transformations happen later in notebooks (Silver and Gold).
 
+### Phase 2: Silver Cleaning ✅
+- **Goal:** Turn raw Bronze data into trusted, one-row-per-ticket Silver data, and keep every rejected row with a reason.
+- **Method:** PySpark in `nb_phase2_silver_build`. Standardized labels (Channel, Queue_Name, Status), converted types with `try_cast`, read two timestamp formats, repaired the CSAT word "Five" as 5, and treated hold time "N/A" as null. Rows with a non-numeric CSAT, missing Agent_ID, missing Timestamp, or invalid talk/hold time go to quarantine with a reason. Quarantine runs before deduplication, then the latest row per Interaction_ID is kept using a window function.
+- **Output:** `dbo.silver_customer_tickets` (4,925 rows), `dbo.quarantine_customer_tickets` (11,675 rows), `dbo.silver_dq_audit` (one row per run).
+- **Verified:** Good + quarantine = 180,000 Bronze rows. Silver has one row per ID, no null Agent_ID or Timestamp, no negative talk time, and CSAT only 1-5 or null. Re-running the writes gave identical counts (idempotent).
+- **Known limitation:** 75 of 5,000 tickets (1.5%) have no clean copy, because every copy is missing an Agent_ID or Timestamp, so they exist only in quarantine. Silver keeps about 4,925 of the 180,000 rows because Phase 0 repeats each ID with different values, so keeping the latest copy discards the rest.
+
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
 - [X] Phase 1: Bronze ingestion pipeline
-- [ ] Phase 2: Silver cleaning
+- [X] Phase 2: Silver cleaning
 - [ ] Phase 2B: Gold star schema
 - [ ] Phase 3: Direct Lake semantic model + RLS
 - [ ] Phase 4: Performance profiling
@@ -67,7 +74,9 @@ BPO-Contact-Center-Optimization/
 ├── nb_phase0_data_augmentation.Notebook/   # Phase 0: builds the 180,000-row synthetic source
 ├── pl_ingest_bpo_tickets.DataPipeline/     # Phase 1: parameterized incremental pipeline, HTTP source to Bronze Delta table
 ├── nb_setup_control_table.Notebook/        # Phase 1: creates control.load_log and update_watermark()
-├── (planned) Silver and Gold notebooks     # Phases 2 and 2B
+├── nb_phase2_silver_profile.Notebook       # Phases 2: Read-only profile of Bronze (shape, nulls, value ranges)
+├── nb_phase2_silver_build.Notebook         # Phases 2: Silver build: clean, quarantine, deduplicate, write, verify
+├── (planned) Gold notebooks                # 2B
 ├── (planned) Semantic model                # Phase 3
 └── README.md
 ```
