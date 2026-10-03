@@ -56,12 +56,19 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** Good + quarantine = 180,000 Bronze rows. Silver has one row per ID, no null Agent_ID or Timestamp, no negative talk time, and CSAT only 1-5 or null. Re-running the writes gave identical counts (idempotent).
 - **Known limitation:** 75 of 5,000 tickets (1.5%) have no clean copy, because every copy is missing an Agent_ID or Timestamp, so they exist only in quarantine. Silver keeps about 4,925 of the 180,000 rows because Phase 0 repeats each ID with different values, so keeping the latest copy discards the rest.
 
+ ### Phase 2B: Gold Star Schema ✅
+- **Goal:** Reshape the clean Silver data into a star schema that Direct Lake and Power BI can query quickly.
+- **Method:** Built four dimension tables (`dim_agent`, `dim_channel`, `dim_queue`, `dim_date`) with surrogate keys, then `fact_interactions` at one row per Interaction_ID. Null Channel and Queue values map to an "Unknown" member, so no rows are lost in the joins. `dim_date` covers 2024 to 2027 so it also covers the January 2027 incremental test batch. Every table is rebuilt with Overwrite, so re-runs are safe.
+- **Output:** `dbo.dim_agent` (40), `dbo.dim_channel` (4), `dbo.dim_queue` (5), `dbo.dim_date` (1,461), `dbo.fact_interactions` (4,925).
+- **Verified:** Fact rows match Silver rows and distinct IDs (4,925). 0 orphan keys across all four dimensions. Identical results on re-run (idempotent).
+- **Known limitation:** About 14% of facts have an Unknown channel (672 rows) and about 17% have an Unknown queue (828 rows), because those nulls were deliberately kept in Phase 2. `Status` is kept in the fact table as a plain text column instead of its own dimension.
+
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
 - [X] Phase 1: Bronze ingestion pipeline
 - [X] Phase 1: Failure/alert path
 - [X] Phase 2: Silver cleaning
-- [ ] Phase 2B: Gold star schema
+- [X] Phase 2B: Gold star schema
 - [ ] Phase 3: Direct Lake semantic model + RLS
 - [ ] Phase 4: Performance profiling
 - [ ] Phase 5: CI/CD & deployment      
@@ -80,8 +87,8 @@ BPO-Contact-Center-Optimization/
 ├── nb_setup_control_table.Notebook/        # Phase 1: creates control.load_log and update_watermark()
 ├── nb_phase2_silver_profile.Notebook       # Phases 2: Read-only profile of Bronze (shape, nulls, value ranges)
 ├── nb_phase2_silver_build.Notebook         # Phases 2: Silver build: clean, quarantine, deduplicate, write, verify
-├── nb_log_pipeline_alert.Notebook          # Writes one alert row per pipeline failure to control.pipeline_alerts
-├── (planned) Gold notebooks                # 2B
+├── nb_log_pipeline_alert.Notebook          # Phases 2: Writes one alert row per pipeline failure to control.pipeline_alerts
+├── nb_phase2b_gold_build.Notebook          # Phases 2B: Builds Gold dimensions and fact table
 ├── (planned) Semantic model                # Phase 3
 └── README.md
 ```
