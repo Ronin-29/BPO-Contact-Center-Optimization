@@ -1,0 +1,7 @@
+role 'RLS - General'
+	modelPermission: read
+
+	tablePermission dim_queue = [Queue_Name] = "General"
+
+	annotation PBI_Id = d225780b08de49a4b66da703c96a7fc5
+

@@ -1,0 +1,7 @@
+role 'RLS - Retention'
+	modelPermission: read
+
+	tablePermission dim_queue = [Queue_Name] = "Retention"
+
+	annotation PBI_Id = 3da579eb7e6948a49d3f16b4ea999515
+

@@ -1,0 +1,7 @@
+role 'RLS - Billing'
+	modelPermission: read
+
+	tablePermission dim_queue = [Queue_Name] == "Billing"
+
+	annotation PBI_Id = 16bb716ca4864b709016f5d3c38cc687
+

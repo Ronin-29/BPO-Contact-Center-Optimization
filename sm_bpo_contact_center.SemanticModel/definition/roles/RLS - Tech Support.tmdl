@@ -1,0 +1,7 @@
+role 'RLS - Tech Support'
+	modelPermission: read
+
+	tablePermission dim_queue = [Queue_Name] = "Tech Support"
+
+	annotation PBI_Id = fbc9cf41b4d84ac9aea2a1ffa04f5b86
+

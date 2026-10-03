@@ -21,3 +21,8 @@ ref table fact_interactions
 ref table dim_agent
 ref table dim_queue
 
+ref role 'RLS - Billing'
+ref role 'RLS - General'
+ref role 'RLS - Retention'
+ref role 'RLS - Tech Support'
+

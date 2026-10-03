@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "rpt_bpo_contact_center"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "da2ad101-7002-9b03-42c9-73546c342443"
+  }
+}
