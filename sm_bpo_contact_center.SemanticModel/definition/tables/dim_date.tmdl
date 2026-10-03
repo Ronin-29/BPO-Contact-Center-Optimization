@@ -5,6 +5,7 @@ table dim_date
 
 	column date_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: b04c97c2-ef60-4805-9ac3-71f99388fbd8
@@ -12,19 +13,29 @@ table dim_date
 		summarizeBy: none
 		sourceColumn: date_key
 
+		changedProperty = IsHidden
+
 		annotation SummarizationSetBy = Automatic
 
 	column full_date
 		dataType: dateTime
 		isKey
-		formatString: General Date
+		formatString: dd/mm/yy
 		sourceProviderType: date
 		lineageTag: 05db4299-ba46-49f8-8036-60acfa73c4d6
 		sourceLineageTag: full_date
 		summarizeBy: none
 		sourceColumn: full_date
 
+		changedProperty = DataType
+
+		changedProperty = FormatString
+
 		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+		annotation PBI_FormatHint = {"isCustom":true}
 
 	column year
 		dataType: int64
@@ -50,12 +61,15 @@ table dim_date
 
 	column month_number
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 459dbe57-2bf7-4491-85c5-d3a4174d5ad9
 		sourceLineageTag: month_number
 		summarizeBy: none
 		sourceColumn: month_number
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
@@ -66,6 +80,9 @@ table dim_date
 		sourceLineageTag: month_name
 		summarizeBy: none
 		sourceColumn: month_name
+		sortByColumn: month_number
+
+		changedProperty = SortByColumn
 
 		annotation SummarizationSetBy = Automatic
 
@@ -82,12 +99,15 @@ table dim_date
 
 	column day_of_week_number
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 00d73c68-099a-4276-b26e-fa927c1a2826
 		sourceLineageTag: day_of_week_number
 		summarizeBy: none
 		sourceColumn: day_of_week_number
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
@@ -98,6 +118,9 @@ table dim_date
 		sourceLineageTag: day_name
 		summarizeBy: none
 		sourceColumn: day_name
+		sortByColumn: day_of_week_number
+
+		changedProperty = SortByColumn
 
 		annotation SummarizationSetBy = Automatic
 

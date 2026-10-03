@@ -4,12 +4,15 @@ table dim_agent
 
 	column agent_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 425f1356-cbe0-4d5c-a9bd-18f06f751956
 		sourceLineageTag: agent_key
 		summarizeBy: none
 		sourceColumn: agent_key
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 

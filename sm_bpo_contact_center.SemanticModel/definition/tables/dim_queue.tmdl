@@ -4,12 +4,15 @@ table dim_queue
 
 	column queue_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: a4b8cbf8-1417-4be2-8b86-f0df007cae96
 		sourceLineageTag: queue_key
 		summarizeBy: none
 		sourceColumn: queue_key
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 

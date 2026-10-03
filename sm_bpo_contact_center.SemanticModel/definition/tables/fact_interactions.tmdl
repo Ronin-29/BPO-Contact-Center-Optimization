@@ -2,6 +2,105 @@ table fact_interactions
 	lineageTag: 562cf046-34ae-4e9e-9887-04d7db2b99dc
 	sourceLineageTag: [dbo].[fact_interactions]
 
+	measure 'Total Interactions' = COUNTROWS(fact_interactions)
+		formatString: 0
+		lineageTag: 344651d7-785d-4013-9305-9e5bf5c18104
+
+		changedProperty = Name
+
+	measure 'Avg Talk Time (sec)' = AVERAGE(fact_interactions[Talk_Time_Sec])
+		formatString: 0.00
+		displayFolder: Time Metrics
+		lineageTag: e083ae82-7a4f-4d7b-a09a-542d81753de3
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = DisplayFolder
+
+	measure 'Avg Hold Time (sec)' = AVERAGE(fact_interactions[Hold_Time_Sec])
+		formatString: 0.00
+		displayFolder: Time Metrics
+		lineageTag: 3b550885-c1f7-478f-a64b-997eb2c427ee
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = DisplayFolder
+
+	measure 'Avg Handle Time (sec)' = AVERAGE(fact_interactions[handle_time_sec])
+		formatString: 0.00
+		displayFolder: Time Metrics
+		lineageTag: 79f7e9a0-fe1f-4327-a961-6537cae36544
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = DisplayFolder
+
+	measure 'Avg CSAT' = AVERAGE(fact_interactions[CSAT_Rating])
+		formatString: 0.00
+		displayFolder: Customer Satisfaction
+		lineageTag: 830a8188-df1f-4e5f-8e47-744c23463048
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = DisplayFolder
+
+	measure 'Rated Interactions' = COUNT(fact_interactions[CSAT_Rating])
+		formatString: 0
+		displayFolder: Customer Satisfaction
+		lineageTag: 94787b1b-4bc6-4941-9e15-c33c25c1bcf6
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+	measure 'Resolved Interactions' = CALCULATE([Total Interactions], fact_interactions[Status] = "Resolved")
+		formatString: 0
+		displayFolder: Outcomes
+		lineageTag: a5b8d583-0416-463c-ac0e-71414bb25df8
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+	measure 'Resolution Rate' = DIVIDE([Resolved Interactions], [Total Interactions])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Outcomes
+		lineageTag: 6916670a-3f7c-477b-8337-fdff46a2b803
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+		changedProperty = FormatString
+
+	measure 'Abandoned Interactions' = CALCULATE([Total Interactions], fact_interactions[Status] = "Abandoned")
+		formatString: 0
+		displayFolder: Outcomes
+		lineageTag: a1abdc88-7504-4509-a84d-3fe958488906
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+	measure 'Abandonment Rate' = DIVIDE([Abandoned Interactions], [Total Interactions])
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Outcomes
+		lineageTag: f656efec-4c49-432a-b221-1ecef7cb70dc
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+		changedProperty = FormatString
+
 	column Interaction_ID
 		dataType: string
 		sourceProviderType: varchar(8000)
@@ -14,6 +113,7 @@ table fact_interactions
 
 	column date_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 02f3cf48-c001-4e11-a522-3b5f984490f7
@@ -21,10 +121,13 @@ table fact_interactions
 		summarizeBy: none
 		sourceColumn: date_key
 
+		changedProperty = IsHidden
+
 		annotation SummarizationSetBy = Automatic
 
 	column agent_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 7776649f-55bb-473c-b80e-d4ea4d63b2a7
@@ -32,10 +135,13 @@ table fact_interactions
 		summarizeBy: none
 		sourceColumn: agent_key
 
+		changedProperty = IsHidden
+
 		annotation SummarizationSetBy = Automatic
 
 	column channel_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 726af58a-13f8-494e-a95a-a4c18d01b893
@@ -43,10 +149,13 @@ table fact_interactions
 		summarizeBy: none
 		sourceColumn: channel_key
 
+		changedProperty = IsHidden
+
 		annotation SummarizationSetBy = Automatic
 
 	column queue_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 38c51cbd-3553-4f16-8239-c4d5f988c09a
@@ -54,18 +163,24 @@ table fact_interactions
 		summarizeBy: none
 		sourceColumn: queue_key
 
+		changedProperty = IsHidden
+
 		annotation SummarizationSetBy = Automatic
 
 	column interaction_timestamp
 		dataType: dateTime
-		formatString: General Date
+		formatString: \S
 		sourceProviderType: datetime2
 		lineageTag: 1be4da00-644e-43e4-9563-6c64d185cae8
 		sourceLineageTag: interaction_timestamp
 		summarizeBy: none
 		sourceColumn: interaction_timestamp
 
+		changedProperty = FormatString
+
 		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isDateTimeCustom":true}
 
 	column Status
 		dataType: string
@@ -83,10 +198,12 @@ table fact_interactions
 		sourceProviderType: int
 		lineageTag: 3d77a3d3-ca61-4de3-b7d3-61d9e2402c3a
 		sourceLineageTag: Talk_Time_Sec
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Talk_Time_Sec
 
-		annotation SummarizationSetBy = Automatic
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
 
 	column Hold_Time_Sec
 		dataType: int64
@@ -94,10 +211,12 @@ table fact_interactions
 		sourceProviderType: int
 		lineageTag: 7f3c79c3-c0c9-433d-96da-4dc973551bb5
 		sourceLineageTag: Hold_Time_Sec
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: Hold_Time_Sec
 
-		annotation SummarizationSetBy = Automatic
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
 
 	column handle_time_sec
 		dataType: int64
@@ -105,10 +224,12 @@ table fact_interactions
 		sourceProviderType: int
 		lineageTag: 03dcb8bb-3868-47ee-81d2-b44b199106d8
 		sourceLineageTag: handle_time_sec
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: handle_time_sec
 
-		annotation SummarizationSetBy = Automatic
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
 
 	column CSAT_Rating
 		dataType: int64
@@ -116,10 +237,12 @@ table fact_interactions
 		sourceProviderType: int
 		lineageTag: 9bf214c7-a532-4e0f-a978-0ea3ae03dc80
 		sourceLineageTag: CSAT_Rating
-		summarizeBy: sum
+		summarizeBy: none
 		sourceColumn: CSAT_Rating
 
-		annotation SummarizationSetBy = Automatic
+		changedProperty = SummarizeBy
+
+		annotation SummarizationSetBy = User
 
 	partition fact_interactions = entity
 		mode: directLake

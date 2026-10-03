@@ -2,6 +2,7 @@ model Model
 	culture: en-US
 	collation: Latin1_General_100_BIN2_UTF8
 	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
 	sourceQueryCulture: en-US
 	directLakeBehavior: directLakeOnly
 	dataAccessOptions
@@ -12,7 +13,7 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_QueryOrder = ["DatabaseQuery"]
 
-annotation PBI_ProTooling = ["WebModelingEdit"]
+annotation PBI_ProTooling = ["WebModelingEdit","DaxQueryView_Desktop"]
 
 ref table dim_channel
 ref table dim_date

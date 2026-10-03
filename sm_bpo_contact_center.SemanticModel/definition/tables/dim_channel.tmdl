@@ -4,12 +4,15 @@ table dim_channel
 
 	column channel_key
 		dataType: int64
+		isHidden
 		formatString: 0
 		sourceProviderType: int
 		lineageTag: 128bc294-d660-4927-9bfe-5f8949bc2bf1
 		sourceLineageTag: channel_key
 		summarizeBy: none
 		sourceColumn: channel_key
+
+		changedProperty = IsHidden
 
 		annotation SummarizationSetBy = Automatic
 
