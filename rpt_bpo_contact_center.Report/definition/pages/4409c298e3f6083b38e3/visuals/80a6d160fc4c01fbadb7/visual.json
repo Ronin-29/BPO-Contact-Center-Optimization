@@ -31,6 +31,24 @@
               "active": true
             }
           ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_interactions"
+                    }
+                  },
+                  "Property": "Total Interactions"
+                }
+              },
+              "queryRef": "fact_interactions.Total Interactions",
+              "nativeQueryRef": "Total Interactions"
+            }
+          ]
         }
       }
     },
@@ -51,6 +69,20 @@
           }
         },
         "type": "Categorical"
+      },
+      {
+        "name": "43e6c2b23ff86e1dc141",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "fact_interactions"
+              }
+            },
+            "Property": "Total Interactions"
+          }
+        },
+        "type": "Advanced"
       }
     ]
   }
