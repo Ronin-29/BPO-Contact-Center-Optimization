@@ -40,6 +40,9 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Resilience:** Retry 2 times, 60 seconds apart, on the notebook activity, because trial Spark capacity sometimes throttles (HTTP 430).
 - **Verified:** 180,000 rows in staging and Bronze; watermark = 2026-12-31 with `rows_loaded` = 180,000. A 2,000-row test batch dated January 2027 loaded only the new rows, and a rerun loaded 0.
 - **Known limitation:** Bronze keeps the raw data as it arrived: 180,000 rows but only 5,000 distinct `Interaction_ID` values, because the repeats come from the Phase 0 source. Deduplication is handled in Silver. The failure alert path is not built yet.
+- - **Failure alerting:** Each of the four pipeline activities has a red On fail path to `nb_log_pipeline_alert`, which writes the pipeline name, run ID, failed activity, and error message to `control.pipeline_alerts`. A Fail activity then ends the run as Failed so errors can't hide as green runs. The chain between activities uses On success links, so a failed step stops everything after it.
+- **Verified (alerting):** Tested end to end by making a temporary test activity fail on purpose: the run showed Failed in Monitor and the alert row held the real run ID and error text. The same pattern was copied to the four real activities, which passed validation, and a normal run succeeded with staging and Bronze both at 180,000 rows.
+- **Known limitation (alerting):** The alert logger runs on Spark, so it can be delayed or fail when the trial capacity is throttled (HTTP 430). The alert is a table, not an email or Teams message.
 
 ### Why a Data Pipeline instead of Dataflow Gen2?
 - A pipeline is built for orchestration: ordered steps, parameters, passing a value (the watermark) between activities, retries, and calling notebooks.
@@ -56,6 +59,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
 - [X] Phase 1: Bronze ingestion pipeline
+- [X] Phase 1: Failure/alert path
 - [X] Phase 2: Silver cleaning
 - [ ] Phase 2B: Gold star schema
 - [ ] Phase 3: Direct Lake semantic model + RLS
@@ -76,6 +80,7 @@ BPO-Contact-Center-Optimization/
 ├── nb_setup_control_table.Notebook/        # Phase 1: creates control.load_log and update_watermark()
 ├── nb_phase2_silver_profile.Notebook       # Phases 2: Read-only profile of Bronze (shape, nulls, value ranges)
 ├── nb_phase2_silver_build.Notebook         # Phases 2: Silver build: clean, quarantine, deduplicate, write, verify
+├── nb_log_pipeline_alert.Notebook          # Writes one alert row per pipeline failure to control.pipeline_alerts
 ├── (planned) Gold notebooks                # 2B
 ├── (planned) Semantic model                # Phase 3
 └── README.md
