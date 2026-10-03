@@ -63,13 +63,30 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** Fact rows match Silver rows and distinct IDs (4,925). 0 orphan keys across all four dimensions. Identical results on re-run (idempotent).
 - **Known limitation:** About 14% of facts have an Unknown channel (672 rows) and about 17% have an Unknown queue (828 rows), because those nulls were deliberately kept in Phase 2. `Status` is kept in the fact table as a plain text column instead of its own dimension.
 
+### Phase 3: Direct Lake Semantic Model + RLS ✅
+- **Goal:** Build a semantic model on the Gold star schema, with relationships, DAX measures and row-level security (RLS), reading the Delta tables directly in Direct Lake mode.
+- **Method:** Created `sm_bpo_contact_center` as Direct Lake on SQL endpoint from the five Gold tables. Four many-to-one, single-direction relationships from `fact_interactions` to each dimension, with `dim_date` marked as the date table. Direct Lake Behavior is set to Direct Lake Only, so a query that cannot be served from the Delta files shows an error instead of silently falling back to DirectQuery. Key and helper columns are hidden, `month_name` and `day_name` have sort-by columns, and Discourage implicit measures is on. 10 explicit DAX measures sit in display folders (Time Metrics, Customer Satisfaction, Outcomes). 4 RLS roles (`RLS - Billing`, `RLS - General`, `RLS - Retention`, `RLS - Tech Support`) each filter `dim_queue` by `Queue_Name`. Testing the roles needed a fixed-identity cloud connection (OAuth 2.0, SSO off), because "Test as role" does not work with the Direct Lake SSO default.
+- **Output:** Semantic model `sm_bpo_contact_center` and a starter report `rpt_bpo_contact_center` (card, queue table, monthly column chart).
+- **Verified:** Total Interactions = 4,925, matching `fact_interactions`. Viewing as `RLS - Billing` shows only Billing (1,655), and viewing as `RLS - Retention` shows only Retention (811). Months sort January to March, not alphabetically. Performance analyzer showed no errors on any visual under Direct Lake Only, so there was no fallback to DirectQuery.
+- **Known limitation:** Interactions with an Unknown queue (828) are not visible to any queue role, by design. The roles have no members assigned (testing used "Test as role" only). Avg Handle Time does not equal Avg Talk Time + Avg Hold Time, because Avg Hold Time skips interactions with no hold value, while handle time counts a missing hold as 0. Resolution Rate divides by all interactions, including Open ones. Abandonment Rate counts only the "Abandoned" status, and "Dropped" is kept separate. The fixed-identity connection `conn_bpo_lakehouse_fixed` is a Fabric account setting and is not stored in Git. The report is a starter with three visuals, and the full dashboard is Phase 3B.
+- 
+- **Evidence:** screenshots in `docs/screenshots/`.
+
+![Model view](docs/screenshots/phase3_01_model_view.png)
+![Direct Lake Only](docs/screenshots/phase3_02_direct_lake_only.png)
+![RLS roles](docs/screenshots/phase3_03_rls_roles.png)
+![RLS Billing test](docs/screenshots/phase3_04_rls_billing_test.png)
+![Report page](docs/screenshots/phase3_05_report_page.png)
+![Performance analyzer](docs/screenshots/phase3_06_performance_analyzer.png)
+
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
 - [X] Phase 1: Bronze ingestion pipeline
 - [X] Phase 1: Failure/alert path
 - [X] Phase 2: Silver cleaning
 - [X] Phase 2B: Gold star schema
-- [ ] Phase 3: Direct Lake semantic model + RLS
+- [X] Phase 3: Direct Lake semantic model + RLS
+- [ ] Phase 3B: Power BI report (contact center dashboard)
 - [ ] Phase 4: Performance profiling
 - [ ] Phase 5: CI/CD & deployment      
 ---
@@ -89,7 +106,9 @@ BPO-Contact-Center-Optimization/
 ├── nb_phase2_silver_build.Notebook         # Phases 2: Silver build: clean, quarantine, deduplicate, write, verify
 ├── nb_log_pipeline_alert.Notebook          # Phases 2: Writes one alert row per pipeline failure to control.pipeline_alerts
 ├── nb_phase2b_gold_build.Notebook          # Phases 2B: Builds Gold dimensions and fact table
-├── (planned) Semantic model                # Phase 3
+├── sm_bpo_contact_center.SemanticModel/  # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
+├── rpt_bpo_contact_center.Report/        # Phase 3: starter Power BI report
+├── docs/screenshots/                     # Phase 3 evidence screenshots
 └── README.md
 ```
 
