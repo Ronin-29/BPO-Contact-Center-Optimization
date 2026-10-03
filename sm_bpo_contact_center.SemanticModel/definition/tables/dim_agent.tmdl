@@ -1,0 +1,34 @@
+table dim_agent
+	lineageTag: 56f11962-4a5e-4c07-8076-0333cd29ff48
+	sourceLineageTag: [dbo].[dim_agent]
+
+	column agent_key
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 425f1356-cbe0-4d5c-a9bd-18f06f751956
+		sourceLineageTag: agent_key
+		summarizeBy: none
+		sourceColumn: agent_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column Agent_ID
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: 9154edfb-c64a-4508-8f36-f5e765b30abe
+		sourceLineageTag: Agent_ID
+		summarizeBy: none
+		sourceColumn: Agent_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_agent = entity
+		mode: directLake
+		source
+			entityName: dim_agent
+			schemaName: dbo
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+

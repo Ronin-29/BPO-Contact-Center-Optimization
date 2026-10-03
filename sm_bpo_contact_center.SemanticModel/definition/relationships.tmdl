@@ -1,0 +1,16 @@
+relationship 01f4128a-80d5-3fe1-cd11-0b1ea01f5b18
+	fromColumn: fact_interactions.date_key
+	toColumn: dim_date.date_key
+
+relationship eb0d6bdc-ecaf-86db-4e89-5c9965858b3c
+	fromColumn: fact_interactions.agent_key
+	toColumn: dim_agent.agent_key
+
+relationship 429d2133-9e7c-d5e0-4996-2912052f7bd6
+	fromColumn: fact_interactions.channel_key
+	toColumn: dim_channel.channel_key
+
+relationship 07e25b32-ed45-94a4-50e9-655c9b6009e2
+	fromColumn: fact_interactions.queue_key
+	toColumn: dim_queue.queue_key
+

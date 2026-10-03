@@ -1,0 +1,132 @@
+table fact_interactions
+	lineageTag: 562cf046-34ae-4e9e-9887-04d7db2b99dc
+	sourceLineageTag: [dbo].[fact_interactions]
+
+	column Interaction_ID
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: 955e0464-dc56-4f60-b2de-fb8c8189e1da
+		sourceLineageTag: Interaction_ID
+		summarizeBy: none
+		sourceColumn: Interaction_ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_key
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 02f3cf48-c001-4e11-a522-3b5f984490f7
+		sourceLineageTag: date_key
+		summarizeBy: none
+		sourceColumn: date_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column agent_key
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 7776649f-55bb-473c-b80e-d4ea4d63b2a7
+		sourceLineageTag: agent_key
+		summarizeBy: none
+		sourceColumn: agent_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column channel_key
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 726af58a-13f8-494e-a95a-a4c18d01b893
+		sourceLineageTag: channel_key
+		summarizeBy: none
+		sourceColumn: channel_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column queue_key
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 38c51cbd-3553-4f16-8239-c4d5f988c09a
+		sourceLineageTag: queue_key
+		summarizeBy: none
+		sourceColumn: queue_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column interaction_timestamp
+		dataType: dateTime
+		formatString: General Date
+		sourceProviderType: datetime2
+		lineageTag: 1be4da00-644e-43e4-9563-6c64d185cae8
+		sourceLineageTag: interaction_timestamp
+		summarizeBy: none
+		sourceColumn: interaction_timestamp
+
+		annotation SummarizationSetBy = Automatic
+
+	column Status
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: 1802343a-6cce-4ecc-bf73-777f8366e9a2
+		sourceLineageTag: Status
+		summarizeBy: none
+		sourceColumn: Status
+
+		annotation SummarizationSetBy = Automatic
+
+	column Talk_Time_Sec
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 3d77a3d3-ca61-4de3-b7d3-61d9e2402c3a
+		sourceLineageTag: Talk_Time_Sec
+		summarizeBy: sum
+		sourceColumn: Talk_Time_Sec
+
+		annotation SummarizationSetBy = Automatic
+
+	column Hold_Time_Sec
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 7f3c79c3-c0c9-433d-96da-4dc973551bb5
+		sourceLineageTag: Hold_Time_Sec
+		summarizeBy: sum
+		sourceColumn: Hold_Time_Sec
+
+		annotation SummarizationSetBy = Automatic
+
+	column handle_time_sec
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 03dcb8bb-3868-47ee-81d2-b44b199106d8
+		sourceLineageTag: handle_time_sec
+		summarizeBy: sum
+		sourceColumn: handle_time_sec
+
+		annotation SummarizationSetBy = Automatic
+
+	column CSAT_Rating
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: 9bf214c7-a532-4e0f-a978-0ea3ae03dc80
+		sourceLineageTag: CSAT_Rating
+		summarizeBy: sum
+		sourceColumn: CSAT_Rating
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_interactions = entity
+		mode: directLake
+		source
+			entityName: fact_interactions
+			schemaName: dbo
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+

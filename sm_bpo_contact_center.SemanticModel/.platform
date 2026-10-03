@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "sm_bpo_contact_center"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "624e5951-b176-9419-49c9-e287b259c375"
+  }
+}

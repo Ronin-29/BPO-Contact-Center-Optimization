@@ -1,0 +1,34 @@
+table dim_queue
+	lineageTag: fd9b6334-4c8f-49d4-b487-577f6bffc87d
+	sourceLineageTag: [dbo].[dim_queue]
+
+	column queue_key
+		dataType: int64
+		formatString: 0
+		sourceProviderType: int
+		lineageTag: a4b8cbf8-1417-4be2-8b86-f0df007cae96
+		sourceLineageTag: queue_key
+		summarizeBy: none
+		sourceColumn: queue_key
+
+		annotation SummarizationSetBy = Automatic
+
+	column Queue_Name
+		dataType: string
+		sourceProviderType: varchar(8000)
+		lineageTag: f40d9e9d-1a6f-4f4c-98a5-4fd93b7d20e0
+		sourceLineageTag: Queue_Name
+		summarizeBy: none
+		sourceColumn: Queue_Name
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_queue = entity
+		mode: directLake
+		source
+			entityName: dim_queue
+			schemaName: dbo
+			expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
+
