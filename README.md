@@ -16,8 +16,8 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 * **Compute & Engineering:** Apache Spark (PySpark Notebooks) ✅
 * **Storage Engine:** Delta Lake (Parquet format) ✅
 * **Modeling & Security:** Fabric web model editor (Direct Lake semantic model, DAX measures, static row-level security roles) ✅
-* **Performance Tuning:** DAX Studio 🚧
-* **DevOps:** Fabric Git Integration & Deployment Pipelines ✅
+* **Performance Tuning:** DAX Studio (XMLA connection, Server Timings, cold vs warm query profiling) ✅
+* **DevOps:** Fabric Git Integration ✅ (Deployment Pipelines 🚧
 
 ---
 
@@ -40,7 +40,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Resilience:** Retry 2 times, 60 seconds apart, on the notebook activity, because trial Spark capacity sometimes throttles (HTTP 430).
 - **Verified:** 180,000 rows in staging and Bronze; watermark = 2026-12-31 with `rows_loaded` = 180,000. A 2,000-row test batch dated January 2027 loaded only the new rows, and a rerun loaded 0.
 - **Known limitation:** Bronze keeps the raw data as it arrived: 180,000 rows but only 5,000 distinct `Interaction_ID` values, because the repeats come from the Phase 0 source. Deduplication is handled in Silver. The failure alert path is not built yet.
-- - **Failure alerting:** Each of the four pipeline activities has a red On fail path to `nb_log_pipeline_alert`, which writes the pipeline name, run ID, failed activity, and error message to `control.pipeline_alerts`. A Fail activity then ends the run as Failed so errors can't hide as green runs. The chain between activities uses On success links, so a failed step stops everything after it.
+- **Failure alerting:** Each of the four pipeline activities has a red On fail path to `nb_log_pipeline_alert`, which writes the pipeline name, run ID, failed activity, and error message to `control.pipeline_alerts`. A Fail activity then ends the run as Failed so errors can't hide as green runs. The chain between activities uses On success links, so a failed step stops everything after it.
 - **Verified (alerting):** Tested end to end by making a temporary test activity fail on purpose: the run showed Failed in Monitor and the alert row held the real run ID and error text. The same pattern was copied to the four real activities, which passed validation, and a normal run succeeded with staging and Bronze both at 180,000 rows.
 - **Known limitation (alerting):** The alert logger runs on Spark, so it can be delayed or fail when the trial capacity is throttled (HTTP 430). The alert is a table, not an email or Teams message.
 
@@ -76,16 +76,15 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** One page with 6 KPI cards (Total Interactions, Avg Handle Time, Avg CSAT, CSAT Top Box %, Resolution Rate, Abandonment Rate), a monthly chart, a channel chart, a queue table, and Queue and Channel slicers. Unknown queue/channel members stay visible so totals match 4,925.
 - **Verified:** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
 - **Known limitation:** Data is synthetic and covers 1 Jan to 2 Mar 2026 (March is partial), so differences between queues and channels are not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
-- **Evidence:** `docs/screenshots/phase3b_01_dashboard.png`, `phase3b_02_slicers_voice_billing.png`, `phase3b_03_rls_billing_report.png`, `phase3b_04_performance_analyzer.png`
-  
-- **Evidence:** screenshots in `docs/screenshots/`.
+- **Evidence:** screenshots in `docs/screenshots/`
 
-![Model view](docs/screenshots/phase3_01_model_view.png)
-![Direct Lake Only](docs/screenshots/phase3_02_direct_lake_only.png)
-![RLS roles](docs/screenshots/phase3_03_rls_roles.png)
-![RLS Billing test](docs/screenshots/phase3_04_rls_billing_test.png)
-![Report page](docs/screenshots/phase3_05_report_page.png)
-![Performance analyzer](docs/screenshots/phase3_06_performance_analyzer.png)
+### Phase 4: Performance Profiling ✅
+- **Goal:** Measure how fast the semantic model answers queries, and compare a first-use (cold) query with repeated (warm) queries.
+- **Method:** Connected DAX Studio to `sm_bpo_contact_center` through the XMLA endpoint and used Server Timings. Ran two saved DAX queries: a queue summary matching the report table, and a distinct count on a column no earlier query had used. Warm tests used five runs each with Clear on Run on.
+- **Output:** Two query files and a short comparison note in `docs/diagnostics/`.
+- **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
+- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied.
+- **Evidence:** `docs/diagnostics/` (query files and comparison note);
 
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
@@ -95,7 +94,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 2B: Gold star schema
 - [X] Phase 3: Direct Lake semantic model + RLS
 - [X] Phase 3B: Power BI report (contact center dashboard)
-- [ ] Phase 4: Performance profiling
+- [X] Phase 4: Performance profiling
 - [ ] Phase 5: CI/CD & deployment      
 ---
 
@@ -114,9 +113,10 @@ BPO-Contact-Center-Optimization/
 ├── nb_phase2_silver_build.Notebook         # Phases 2: Silver build: clean, quarantine, deduplicate, write, verify
 ├── nb_log_pipeline_alert.Notebook          # Phases 2: Writes one alert row per pipeline failure to control.pipeline_alerts
 ├── nb_phase2b_gold_build.Notebook          # Phases 2B: Builds Gold dimensions and fact table
-├── sm_bpo_contact_center.SemanticModel/  # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
-├── rpt_bpo_contact_center.Report/        # Phase 3: Starter Power BI report
-├── docs/screenshots/                     # Phase 3 evidence screenshots
+├── sm_bpo_contact_center.SemanticModel/    # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
+├── rpt_bpo_contact_center.Report/          # Phases 3 and 3B: Power BI report (starter, then full dashboard)
+├── docs/screenshots/                       # Phase 3, 3B and 4 evidence screenshots
+├── docs/diagnostics/                       # Phase 4: DAX Studio query files and cold vs warm comparison note
 └── README.md
 ```
 
