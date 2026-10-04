@@ -15,7 +15,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 * **Orchestration & Ingestion:** Microsoft Fabric Data Factory (Pipelines & Copy Activities) ✅
 * **Compute & Engineering:** Apache Spark (PySpark Notebooks) ✅
 * **Storage Engine:** Delta Lake (Parquet format) ✅
-* **Modeling & Security:** Tabular Editor 3 & TMDL (Tabular Model Definition Language) 🚧
+* **Modeling & Security:** Fabric web model editor (Direct Lake semantic model, DAX measures, static row-level security roles) ✅
 * **Performance Tuning:** DAX Studio 🚧
 * **DevOps:** Fabric Git Integration & Deployment Pipelines ✅
 
@@ -69,7 +69,15 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** Semantic model `sm_bpo_contact_center` and a starter report `rpt_bpo_contact_center` (card, queue table, monthly column chart).
 - **Verified:** Total Interactions = 4,925, matching `fact_interactions`. Viewing as `RLS - Billing` shows only Billing (1,655), and viewing as `RLS - Retention` shows only Retention (811). Months sort January to March, not alphabetically. Performance analyzer showed no errors on any visual under Direct Lake Only, so there was no fallback to DirectQuery.
 - **Known limitation:** Interactions with an Unknown queue (828) are not visible to any queue role, by design. The roles have no members assigned (testing used "Test as role" only). Avg Handle Time does not equal Avg Talk Time + Avg Hold Time, because Avg Hold Time skips interactions with no hold value, while handle time counts a missing hold as 0. Resolution Rate divides by all interactions, including Open ones. Abandonment Rate counts only the "Abandoned" status, and "Dropped" is kept separate. The fixed-identity connection `conn_bpo_lakehouse_fixed` is a Fabric account setting and is not stored in Git. The report is a starter with three visuals, and the full dashboard is Phase 3B.
-- 
+
+### Phase 3B: Power BI Report ✅
+- **Goal:** Build a one-page contact center dashboard on top of the Direct Lake semantic model, with every number coming from model measures.
+- **Method:** Built `rpt_bpo_contact_center` in the Fabric web editor as a thin report connected to `sm_bpo_contact_center`. Added the measure `CSAT Top Box %` (ratings of 4 or 5 divided by rated interactions, so unrated interactions are excluded).
+- **Output:** One page with 6 KPI cards (Total Interactions, Avg Handle Time, Avg CSAT, CSAT Top Box %, Resolution Rate, Abandonment Rate), a monthly chart, a channel chart, a queue table, and Queue and Channel slicers. Unknown queue/channel members stay visible so totals match 4,925.
+- **Verified:** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
+- **Known limitation:** Data is synthetic and covers 1 Jan to 2 Mar 2026 (March is partial), so differences between queues and channels are not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
+- **Evidence:** `docs/screenshots/phase3b_01_dashboard.png`, `phase3b_02_slicers_voice_billing.png`, `phase3b_03_rls_billing_report.png`, `phase3b_04_performance_analyzer.png`
+  
 - **Evidence:** screenshots in `docs/screenshots/`.
 
 ![Model view](docs/screenshots/phase3_01_model_view.png)
@@ -86,7 +94,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 2: Silver cleaning
 - [X] Phase 2B: Gold star schema
 - [X] Phase 3: Direct Lake semantic model + RLS
-- [ ] Phase 3B: Power BI report (contact center dashboard)
+- [X] Phase 3B: Power BI report (contact center dashboard)
 - [ ] Phase 4: Performance profiling
 - [ ] Phase 5: CI/CD & deployment      
 ---
@@ -107,7 +115,7 @@ BPO-Contact-Center-Optimization/
 ├── nb_log_pipeline_alert.Notebook          # Phases 2: Writes one alert row per pipeline failure to control.pipeline_alerts
 ├── nb_phase2b_gold_build.Notebook          # Phases 2B: Builds Gold dimensions and fact table
 ├── sm_bpo_contact_center.SemanticModel/  # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
-├── rpt_bpo_contact_center.Report/        # Phase 3: starter Power BI report
+├── rpt_bpo_contact_center.Report/        # Phase 3: Starter Power BI report
 ├── docs/screenshots/                     # Phase 3 evidence screenshots
 └── README.md
 ```
