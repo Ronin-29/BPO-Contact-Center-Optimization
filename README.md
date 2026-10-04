@@ -83,8 +83,8 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Method:** Connected DAX Studio to `sm_bpo_contact_center` through the XMLA endpoint and used Server Timings. Ran two saved DAX queries: a queue summary matching the report table, and a distinct count on a column no earlier query had used. Warm tests used five runs each with Clear on Run on.
 - **Output:** Two query files and a short comparison note in `docs/diagnostics/`.
 - **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
-- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied.
-- **Evidence:** `docs/diagnostics/` (query files and comparison note);
+- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching.
+- **Evidence:** `Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
 
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
