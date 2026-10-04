@@ -1,0 +1,4 @@
+﻿EVALUATE
+ROW(
+    "Distinct Interaction IDs", DISTINCTCOUNT(fact_interactions[Interaction_ID])
+)
