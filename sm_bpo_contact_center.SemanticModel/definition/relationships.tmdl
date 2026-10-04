@@ -11,6 +11,7 @@ relationship 429d2133-9e7c-d5e0-4996-2912052f7bd6
 	toColumn: dim_channel.channel_key
 
 relationship 07e25b32-ed45-94a4-50e9-655c9b6009e2
+	relyOnReferentialIntegrity
 	fromColumn: fact_interactions.queue_key
 	toColumn: dim_queue.queue_key
 

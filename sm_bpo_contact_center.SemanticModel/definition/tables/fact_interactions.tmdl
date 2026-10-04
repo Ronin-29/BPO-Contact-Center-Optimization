@@ -101,6 +101,22 @@ table fact_interactions
 
 		changedProperty = FormatString
 
+	measure 'CSAT Top Box %' =
+			
+			DIVIDE(
+			    CALCULATE(COUNTROWS(fact_interactions), fact_interactions[CSAT_Rating] >= 4),
+			    [Rated Interactions]
+			)
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: Customer Satisfaction
+		lineageTag: c9729425-d8da-4936-a9e2-5b1b8798b4ba
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
 	column Interaction_ID
 		dataType: string
 		sourceProviderType: varchar(8000)
