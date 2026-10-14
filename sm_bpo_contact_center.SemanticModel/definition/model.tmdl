@@ -11,9 +11,9 @@ model Model
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["DatabaseQuery"]
+annotation PBI_QueryOrder = DatabaseQuery
 
-annotation PBI_ProTooling = ["WebModelingEdit","DaxQueryView_Desktop"]
+annotation PBI_ProTooling = ["SLL", "DaxQueryView_Desktop", "WebModelingEdit", "SLL_UpdateDLConnection_SQL"]
 
 ref table dim_channel
 ref table dim_date

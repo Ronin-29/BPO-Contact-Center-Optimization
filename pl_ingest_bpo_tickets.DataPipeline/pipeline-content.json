@@ -30,7 +30,7 @@
               },
               "schema": [],
               "externalReferences": {
-                "connection": "e4ed31e7-f0ad-4d30-9a44-640517c7ab4e"
+                "connection": "2e32deab-292f-4450-8399-54fef0dd539e"
               },
               "annotations": []
             }
@@ -44,11 +44,11 @@
             "datasetSettings": {
               "type": "LakehouseTable",
               "typeProperties": {
-                "schema": "",
+                "schema": "dbo",
                 "table": "stg_customer_tickets"
               },
               "schema": [],
-              "linkedService": {
+              "connectionSettings": {
                 "name": "BPO_Optimization_Lakehouse",
                 "properties": {
                   "type": "Lakehouse",
@@ -56,6 +56,9 @@
                     "artifactId": "cc861563-ddb4-831f-4486-bf6e3850ce3e",
                     "workspaceId": "00000000-0000-0000-0000-000000000000",
                     "rootFolder": "Tables"
+                  },
+                  "externalReferences": {
+                    "connection": "7289ad9f-6d07-41db-b7ab-f4020b63418d"
                   },
                   "annotations": []
                 }
@@ -219,7 +222,7 @@
               "table": "load_log"
             },
             "schema": [],
-            "linkedService": {
+            "connectionSettings": {
               "name": "BPO_Optimization_Lakehouse",
               "properties": {
                 "type": "Lakehouse",
@@ -227,6 +230,9 @@
                   "artifactId": "cc861563-ddb4-831f-4486-bf6e3850ce3e",
                   "workspaceId": "00000000-0000-0000-0000-000000000000",
                   "rootFolder": "Tables"
+                },
+                "externalReferences": {
+                  "connection": "7289ad9f-6d07-41db-b7ab-f4020b63418d"
                 },
                 "annotations": []
               }
@@ -256,10 +262,7 @@
         "typeProperties": {
           "source": {
             "type": "LakehouseTableSource",
-            "sqlReaderQuery": {
-              "value": "SELECT *\nFROM dbo.stg_customer_tickets\nWHERE try_cast(sim_date AS DATE) > '@{activity('lkp_get_watermark').output.firstRow.last_loaded_date}'",
-              "type": "Expression"
-            },
+            "sqlReaderQuery": "SELECT *\nFROM dbo.stg_customer_tickets\nWHERE try_cast(sim_date AS DATE) > '@{activity('lkp_get_watermark').output.firstRow.last_loaded_date}'",
             "partitionOption": "None",
             "datasetSettings": {
               "type": "LakehouseTable",
@@ -274,7 +277,7 @@
                     "rootFolder": "Tables"
                   },
                   "externalReferences": {
-                    "connection": "52e800b4-66f3-4a66-82a3-155bce1cea5c"
+                    "connection": "7289ad9f-6d07-41db-b7ab-f4020b63418d"
                   },
                   "annotations": []
                 }
@@ -287,6 +290,7 @@
             "tableActionOption": "Append",
             "applyVOrder": false,
             "enableTimestampNtz": false,
+            "partitionOption": "None",
             "datasetSettings": {
               "type": "LakehouseTable",
               "typeProperties": {
@@ -304,7 +308,7 @@
                     "rootFolder": "Tables"
                   },
                   "externalReferences": {
-                    "connection": "2865216a-9b20-4c88-b55b-5b21772bae70"
+                    "connection": "7289ad9f-6d07-41db-b7ab-f4020b63418d"
                   },
                   "annotations": []
                 }
@@ -515,11 +519,17 @@
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "pipeline_name": {
-              "value": "@pipeline().PipelineName",
+              "value": {
+                "value": "@pipeline().PipelineName",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "run_id": {
-              "value": "@pipeline().RunId",
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "failed_activity": {
@@ -575,11 +585,17 @@
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "pipeline_name": {
-              "value": "@pipeline().PipelineName",
+              "value": {
+                "value": "@pipeline().PipelineName",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "run_id": {
-              "value": "@pipeline().RunId",
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "failed_activity": {
@@ -635,11 +651,17 @@
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "pipeline_name": {
-              "value": "@pipeline().PipelineName",
+              "value": {
+                "value": "@pipeline().PipelineName",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "run_id": {
-              "value": "@pipeline().RunId",
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "failed_activity": {
@@ -695,11 +717,17 @@
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "pipeline_name": {
-              "value": "@pipeline().PipelineName",
+              "value": {
+                "value": "@pipeline().PipelineName",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "run_id": {
-              "value": "@pipeline().RunId",
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
               "type": "string"
             },
             "failed_activity": {

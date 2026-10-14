@@ -8,12 +8,12 @@
 # META   },
 # META   "dependencies": {
 # META     "lakehouse": {
-# META       "default_lakehouse": "3850ce3e-bf6e-4486-831f-ddb4cc861563",
+# META       "default_lakehouse": "53aca8b1-e3ae-40f8-bc21-ecf8d849a5db",
 # META       "default_lakehouse_name": "BPO_Optimization_Lakehouse",
-# META       "default_lakehouse_workspace_id": "f8587821-d380-43d5-a84e-a6c435f190b9",
+# META       "default_lakehouse_workspace_id": "2a14efbb-e4ad-40b0-ac12-4b64b4ebfec1",
 # META       "known_lakehouses": [
 # META         {
-# META           "id": "3850ce3e-bf6e-4486-831f-ddb4cc861563"
+# META           "id": "53aca8b1-e3ae-40f8-bc21-ecf8d849a5db"
 # META         }
 # META       ]
 # META     },
