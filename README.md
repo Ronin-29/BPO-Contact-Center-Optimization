@@ -17,7 +17,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 * **Storage Engine:** Delta Lake (Parquet format) ✅
 * **Modeling & Security:** Fabric web model editor (Direct Lake semantic model, DAX measures, static row-level security roles) ✅
 * **Performance Tuning:** DAX Studio (XMLA connection, Server Timings, cold vs warm query profiling) ✅
-* **DevOps:** Fabric Git Integration ✅ (Deployment Pipelines 🚧
+* **DevOps:** Fabric Git Integration ✅ Deployment Pipelines 🚧
 
 ---
 
@@ -26,7 +26,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 
 ### Phase 0: Data Augmentation ✅
 - **Goal:** Turn a 5,000-row messy seed CSV into a 180,000-row synthetic source, reproducibly.
-- **Method:** Loaded the seed as strings, cast `Talk_Time_Sec` with `try_cast` (Spark 4.1 runs in ANSI mode, so a plain `cast` would fail on bad values), cross-joined with a 2024-01-01 to 2026-12-31 date spine, shuffled and limited to 180,000 rows, regenerated `Talk_Time_Sec` from the seed's mean and standard deviation, and injected anomalies (~2% `CSAT_Rating` set to "Five", ~1% `Agent_ID` set to null).
+- **Method:** Loaded the seed as strings, cast `Talk_Time_Sec` with `try_cast` so bad values become null instead of causing an error, cross-joined with a 2024-01-01 to 2026-12-31 date spine, shuffled and limited to 180,000 rows, regenerated `Talk_Time_Sec` from the seed's mean and standard deviation, and injected anomalies (~2% `CSAT_Rating` set to "Five", ~1% `Agent_ID` set to null).
 - **Reproducibility:** `SEED = 42`.
 - **Output:** CSV with header in `Files/landing/bronze_customer_tickets_raw/`.
 - **Verified:** 180,000 rows read back; 5,376 rows with `CSAT_Rating = 'Five'`; 3,704 null `Agent_ID`. Both counts are above the injected rates because the seed already had some dirty values.
@@ -84,7 +84,15 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** Two query files and a short comparison note in `docs/diagnostics/`.
 - **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
 - **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching.
-- **Evidence:** `Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
+- **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
+
+### Rebuild from Source Control ✅
+
+- **Goal:** Prove the whole solution can be rebuilt from GitHub alone if a workspace is lost (the 60-day Fabric trial ended).
+- **Method:** Created a new workspace on a new trial capacity in a different region, connected it to this repo and synced all 11 items. Items arrive without data, so I re-attached the lakehouse in the 6 notebooks, created new connections, re-ran the pipeline, Silver and Gold notebooks, repointed the Direct Lake model to the new lakehouse with the semantic-link-labs function `update_direct_lake_model_connection`, and recreated the fixed-identity connection used for row-level security.
+- **Output:** A working copy of the full solution, with the updated notebook, pipeline and model definitions committed.
+- **Verified:** Every count matched the original: 180,000 rows in staging and Bronze, 4,925 in Silver, 11,675 in quarantine, dimensions 40 / 4 / 5 / 1,461 and 4,925 fact rows. The report KPIs and all four RLS roles matched too.
+- **Known limitation:** Git saves item definitions only, not data, connections or the deployment pipeline. A workspace cannot move to a capacity in another region while it holds Fabric items, so this was a rebuild, not a move. Connections had to be recreated by hand.
 
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
@@ -95,6 +103,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 3: Direct Lake semantic model + RLS
 - [X] Phase 3B: Power BI report (contact center dashboard)
 - [X] Phase 4: Performance profiling
+- [X] Rebuild from source control
 - [ ] Phase 5: CI/CD & deployment      
 ---
 
@@ -109,12 +118,12 @@ BPO-Contact-Center-Optimization/
 ├── nb_phase0_data_augmentation.Notebook/   # Phase 0: builds the 180,000-row synthetic source
 ├── pl_ingest_bpo_tickets.DataPipeline/     # Phase 1: parameterized incremental pipeline, HTTP source to Bronze Delta table
 ├── nb_setup_control_table.Notebook/        # Phase 1: creates control.load_log and update_watermark()
-├── nb_phase2_silver_profile.Notebook       # Phases 2: Read-only profile of Bronze (shape, nulls, value ranges)
-├── nb_phase2_silver_build.Notebook         # Phases 2: Silver build: clean, quarantine, deduplicate, write, verify
-├── nb_log_pipeline_alert.Notebook          # Phases 2: Writes one alert row per pipeline failure to control.pipeline_alerts
-├── nb_phase2b_gold_build.Notebook          # Phases 2B: Builds Gold dimensions and fact table
+├── nb_phase2_silver_profile.Notebook       # Phase 2: Read-only profile of Bronze (shape, nulls, value ranges)
+├── nb_phase2_silver_build.Notebook         # Phase 2: Silver build: clean, quarantine, deduplicate, write, verify
+├── nb_log_pipeline_alert.Notebook          # Phase 2: Writes one alert row per pipeline failure to control.pipeline_alerts
+├── nb_phase2b_gold_build.Notebook          # Phase 2B: Builds Gold dimensions and fact table
 ├── sm_bpo_contact_center.SemanticModel/    # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
-├── rpt_bpo_contact_center.Report/          # Phases 3 and 3B: Power BI report (starter, then full dashboard)
+├── rpt_bpo_contact_center.Report/          # Phase 3 and 3B: Power BI report (starter, then full dashboard)
 ├── docs/screenshots/                       # Phase 3, 3B and 4 evidence screenshots
 ├── docs/diagnostics/                       # Phase 4: DAX Studio query files and cold vs warm comparison note
 └── README.md
