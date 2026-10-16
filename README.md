@@ -17,12 +17,12 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 * **Storage Engine:** Delta Lake (Parquet format) ✅
 * **Modeling & Security:** Fabric web model editor (Direct Lake semantic model, DAX measures, static row-level security roles) ✅
 * **Performance Tuning:** DAX Studio (XMLA connection, Server Timings, cold vs warm query profiling) ✅
-* **DevOps:** Fabric Git Integration ✅ Deployment Pipelines 🚧
+* **DevOps (Phase 5):** Fabric Git Integration ✅, Deployment Pipelines ✅ (manual promotion across Development, Test and Production)
 
 ---
 
 ## 📈 Project Status & Metrics Log
-*This section serves as a living log and will be populated with empirical results during pipeline execution.*
+*This section serves as a living log and results for each phase, with what was verified and what was not.*
 
 ### Phase 0: Data Augmentation ✅
 - **Goal:** Turn a 5,000-row messy seed CSV into a 180,000-row synthetic source, reproducibly.
@@ -39,7 +39,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Parameters:** `p_source_path`, `p_load_date`, `p_environment`.
 - **Resilience:** Retry 2 times, 60 seconds apart, on the notebook activity, because trial Spark capacity sometimes throttles (HTTP 430).
 - **Verified:** 180,000 rows in staging and Bronze; watermark = 2026-12-31 with `rows_loaded` = 180,000. A 2,000-row test batch dated January 2027 loaded only the new rows, and a rerun loaded 0.
-- **Known limitation:** Bronze keeps the raw data as it arrived: 180,000 rows but only 5,000 distinct `Interaction_ID` values, because the repeats come from the Phase 0 source. Deduplication is handled in Silver.
+- **Known limitation:** Bronze keeps the raw data as it arrived: 180,000 rows but only 5,000 distinct `Interaction_ID` values, because the repeats come from the Phase 0 source. Deduplication is handled in Silver. The watermark follows the `sim_date` column from the Phase 0 date spine (latest value 2026-12-31). The dates shown in the dashboard (1 Jan to 2 Mar 2026) are a different range, so the two should not be compared.
 - **Failure alerting:** Each of the four pipeline activities has a red On fail path to `nb_log_pipeline_alert`, which writes the pipeline name, run ID, failed activity, and error message to `control.pipeline_alerts`. A Fail activity then ends the run as Failed so errors can't hide as green runs. The chain between activities uses On success links, so a failed step stops everything after it.
 - **Verified (alerting):** Tested end to end by making a temporary test activity fail on purpose: the run showed Failed in Monitor and the alert row held the real run ID and error text. The same pattern was copied to the four real activities, which passed validation, and a normal run succeeded with staging and Bronze both at 180,000 rows.
 - **Known limitation (alerting):** The alert logger runs on Spark, so it can be delayed or fail when the trial capacity is throttled (HTTP 430). The alert is a table, not an email or Teams message.
@@ -56,7 +56,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** Quarantine (11,675) plus the clean rows before deduplication (168,325) equals the 180,000 Bronze rows; deduplication then keeps the latest row per Interaction_ID, which leaves 4,925 in Silver. Silver has one row per ID, no null Agent_ID or Timestamp, no negative talk time, and CSAT only 1-5 or null. Re-running the writes gave identical counts (idempotent).
 - **Known limitation:** 75 of 5,000 tickets (1.5%) have no clean copy, because every copy is missing an Agent_ID or Timestamp, so they exist only in quarantine. Silver keeps about 4,925 of the 180,000 rows because Phase 0 repeats each ID with different values, so keeping the latest copy discards the rest.
 
- ### Phase 2B: Gold Star Schema ✅
+### Phase 2B: Gold Star Schema ✅
 - **Goal:** Reshape the clean Silver data into a star schema that Direct Lake and Power BI can query quickly.
 - **Method:** Built four dimension tables (`dim_agent`, `dim_channel`, `dim_queue`, `dim_date`) with surrogate keys, then `fact_interactions` at one row per Interaction_ID. Null Channel and Queue values map to an "Unknown" member, so no rows are lost in the joins. `dim_date` covers 2024 to 2027 so it also covers the January 2027 incremental test batch. Every table is rebuilt with Overwrite, so re-runs are safe.
 - **Output:** `dbo.dim_agent` (40), `dbo.dim_channel` (4), `dbo.dim_queue` (5), `dbo.dim_date` (1,461), `dbo.fact_interactions` (4,925).
@@ -81,9 +81,9 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 ### Phase 4: Performance Profiling ✅
 - **Goal:** Measure how fast the semantic model answers queries, and compare a first-use (cold) query with repeated (warm) queries.
 - **Method:** Connected DAX Studio to `sm_bpo_contact_center` through the XMLA endpoint and used Server Timings. Ran two saved DAX queries: a queue summary matching the report table, and a distinct count on a column no earlier query had used. Warm tests used five runs each with Clear on Run on.
-- **Output:** Two query files and a short comparison note in `docs/diagnostics/`.
+- **Output:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
 - **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
-- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching.
+- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching. Timings were measured on the first trial, before the rebuild, and were not repeated.
 - **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
 
 ### Rebuild from Source Control ✅
@@ -96,10 +96,10 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 
 ### Phase 5: Deployment ✅
 - **Goal:** Promote the solution from Development to Test to Production with a Fabric Deployment Pipeline, and check that each stage works with its own data.
-- **Method:** Built on the rebuilt workspaces (see Rebuild above). Created three workspaces (DEV2, TEST2, PROD2) and one Deployment Pipeline, `dp_bpo_contact_center`. DEV2 is Git-connected; TEST2 and PROD2 are not. Deployed the 11 items from Development to Test, then from Test to Production. In Test and in Production, ran the control setup cells of `nb_setup_control_table`, the ingest pipeline, and the Silver and Gold notebooks, repointed the semantic model to that stage's lakehouse with `update_direct_lake_model_connection` (semantic-link-labs), and refreshed it.
+- **Method:** Used the rebuilt workspace (see Rebuild above) as the Development stage, named DEV2, and created two more workspaces, TEST2 and PROD2, plus one Deployment Pipeline, `dp_bpo_contact_center`. DEV2 is Git-connected; TEST2 and PROD2 are not. Deployed the 11 items from Development to Test, then from Test to Production. In Test and in Production, ran the control setup cells of `nb_setup_control_table`, the ingest pipeline, and the Silver and Gold notebooks, repointed the semantic model to that stage's lakehouse with `update_direct_lake_model_connection` (semantic-link-labs), and refreshed it.
 - **Output:** Three working stages, each with its own lakehouse data, semantic model and report.
-- **Verified:** Same counts in all three stages: Bronze 180,000, Silver 4,925, quarantine 11,675, dimensions 40 / 4 / 5 / 1,461, fact 4,925. Report KPIs in Test and Production match Development. After the repoint, the lineage view shows the Production report, model, SQL endpoint and lakehouse all in PROD2. Row-level security was tested with "Test as role" in Development only. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment.
-- **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment.
+- **Verified:** Same counts in all three stages: Bronze 180,000, Silver 4,925, quarantine 11,675, dimensions 40 / 4 / 5 / 1,461, fact 4,925. Report KPIs in Test and Production match Development. After the repoint, the lineage view shows the Production report, model, SQL endpoint and lakehouse all in PROD2. Row-level security was tested with "Test as role" in Development only. 
+- **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment.
 - **Evidence:** screenshots in `docs/screenshots/`
   
 ## Build Progress
@@ -113,6 +113,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 4: Performance profiling
 - [X] Rebuild from source control
 - [X] Phase 5: Deployment (Development, Test, Production)
+
 ---
 
 ## 📁 Repository Structure
@@ -133,6 +134,7 @@ BPO-Contact-Center-Optimization/
 ├── sm_bpo_contact_center.SemanticModel/    # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
 ├── rpt_bpo_contact_center.Report/          # Phase 3 and 3B: Power BI report (starter, then full dashboard)
 ├── docs/screenshots/                       # Phase 3, 3B, 4 and 5 evidence screenshots
+├── docs/diagnostics/                       # Phase 4: DAX Studio query files and cold vs warm comparison note
 └── README.md
 ```
 
