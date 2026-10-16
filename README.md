@@ -101,7 +101,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** Same counts in all three stages: Bronze 180,000, Silver 4,925, quarantine 11,675, dimensions 40 / 4 / 5 / 1,461, fact 4,925. Report KPIs in Test and Production match Development. After the repoint, the lineage view shows the Production report, model, SQL endpoint and lakehouse all in PROD2. Row-level security was tested with "Test as role" in Development only. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment.
 - **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment.
 - **Evidence:** screenshots in `docs/screenshots/`
-- 
+  
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
 - [X] Phase 1: Bronze ingestion pipeline
@@ -112,7 +112,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 3B: Power BI report (contact center dashboard)
 - [X] Phase 4: Performance profiling
 - [X] Rebuild from source control
-- [ ] Phase 5: CI/CD & deployment      
+- [X] Phase 5: Deployment (Development, Test, Production)
 ---
 
 ## 📁 Repository Structure
