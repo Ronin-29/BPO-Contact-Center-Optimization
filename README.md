@@ -22,7 +22,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 ---
 
 ## 📈 Project Status & Metrics Log
-*This section serves as a living log and results for each phase, with what was verified and what was not.*
+*This section is a living log: results for each phase, with what was verified and what was not.*
 
 ### Phase 0: Data Augmentation ✅
 - **Goal:** Turn a 5,000-row messy seed CSV into a 180,000-row synthetic source, reproducibly.
@@ -84,7 +84,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
 - **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
 - **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching. Timings were measured on the first trial, before the rebuild, and were not repeated.
-- **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
+- **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`; cold-run and warm-run screenshots in `docs/screenshots/`. The 2,420 ms first run is shown only in the cold-run screenshot.
 
 ### Rebuild from Source Control ✅
 
