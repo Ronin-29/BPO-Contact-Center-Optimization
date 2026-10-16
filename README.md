@@ -39,7 +39,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Parameters:** `p_source_path`, `p_load_date`, `p_environment`.
 - **Resilience:** Retry 2 times, 60 seconds apart, on the notebook activity, because trial Spark capacity sometimes throttles (HTTP 430).
 - **Verified:** 180,000 rows in staging and Bronze; watermark = 2026-12-31 with `rows_loaded` = 180,000. A 2,000-row test batch dated January 2027 loaded only the new rows, and a rerun loaded 0.
-- **Known limitation:** Bronze keeps the raw data as it arrived: 180,000 rows but only 5,000 distinct `Interaction_ID` values, because the repeats come from the Phase 0 source. Deduplication is handled in Silver. The failure alert path is not built yet.
+- **Known limitation:** Bronze keeps the raw data as it arrived: 180,000 rows but only 5,000 distinct `Interaction_ID` values, because the repeats come from the Phase 0 source. Deduplication is handled in Silver.
 - **Failure alerting:** Each of the four pipeline activities has a red On fail path to `nb_log_pipeline_alert`, which writes the pipeline name, run ID, failed activity, and error message to `control.pipeline_alerts`. A Fail activity then ends the run as Failed so errors can't hide as green runs. The chain between activities uses On success links, so a failed step stops everything after it.
 - **Verified (alerting):** Tested end to end by making a temporary test activity fail on purpose: the run showed Failed in Monitor and the alert row held the real run ID and error text. The same pattern was copied to the four real activities, which passed validation, and a normal run succeeded with staging and Bronze both at 180,000 rows.
 - **Known limitation (alerting):** The alert logger runs on Spark, so it can be delayed or fail when the trial capacity is throttled (HTTP 430). The alert is a table, not an email or Teams message.
@@ -53,7 +53,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Goal:** Turn raw Bronze data into trusted, one-row-per-ticket Silver data, and keep every rejected row with a reason.
 - **Method:** PySpark in `nb_phase2_silver_build`. Standardized labels (Channel, Queue_Name, Status), converted types with `try_cast`, read two timestamp formats, repaired the CSAT word "Five" as 5, and treated hold time "N/A" as null. Rows with a non-numeric CSAT, missing Agent_ID, missing Timestamp, or invalid talk/hold time go to quarantine with a reason. Quarantine runs before deduplication, then the latest row per Interaction_ID is kept using a window function.
 - **Output:** `dbo.silver_customer_tickets` (4,925 rows), `dbo.quarantine_customer_tickets` (11,675 rows), `dbo.silver_dq_audit` (one row per run).
-- **Verified:** Good + quarantine = 180,000 Bronze rows. Silver has one row per ID, no null Agent_ID or Timestamp, no negative talk time, and CSAT only 1-5 or null. Re-running the writes gave identical counts (idempotent).
+- **Verified:** Quarantine (11,675) plus the clean rows before deduplication (168,325) equals the 180,000 Bronze rows; deduplication then keeps the latest row per Interaction_ID, which leaves 4,925 in Silver. Silver has one row per ID, no null Agent_ID or Timestamp, no negative talk time, and CSAT only 1-5 or null. Re-running the writes gave identical counts (idempotent).
 - **Known limitation:** 75 of 5,000 tickets (1.5%) have no clean copy, because every copy is missing an Agent_ID or Timestamp, so they exist only in quarantine. Silver keeps about 4,925 of the 180,000 rows because Phase 0 repeats each ID with different values, so keeping the latest copy discards the rest.
 
  ### Phase 2B: Gold Star Schema ✅
@@ -94,6 +94,14 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** Every count matched the original: 180,000 rows in staging and Bronze, 4,925 in Silver, 11,675 in quarantine, dimensions 40 / 4 / 5 / 1,461 and 4,925 fact rows. The report KPIs and all four RLS roles matched too.
 - **Known limitation:** Git saves item definitions only, not data, connections or the deployment pipeline. A workspace cannot move to a capacity in another region while it holds Fabric items, so this was a rebuild, not a move. Connections had to be recreated by hand.
 
+### Phase 5: Deployment ✅
+- **Goal:** Promote the solution from Development to Test to Production with a Fabric Deployment Pipeline, and check that each stage works with its own data.
+- **Method:** Built on the rebuilt workspaces (see Rebuild above). Created three workspaces (DEV2, TEST2, PROD2) and one Deployment Pipeline, `dp_bpo_contact_center`. DEV2 is Git-connected; TEST2 and PROD2 are not. Deployed the 11 items from Development to Test, then from Test to Production. In Test and in Production, ran the control setup cells of `nb_setup_control_table`, the ingest pipeline, and the Silver and Gold notebooks, repointed the semantic model to that stage's lakehouse with `update_direct_lake_model_connection` (semantic-link-labs), and refreshed it.
+- **Output:** Three working stages, each with its own lakehouse data, semantic model and report.
+- **Verified:** Same counts in all three stages: Bronze 180,000, Silver 4,925, quarantine 11,675, dimensions 40 / 4 / 5 / 1,461, fact 4,925. Report KPIs in Test and Production match Development. After the repoint, the lineage view shows the Production report, model, SQL endpoint and lakehouse all in PROD2. Row-level security was tested with "Test as role" in Development only. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment.
+- **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment.
+- **Evidence:** screenshots in `docs/screenshots/`
+- 
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
 - [X] Phase 1: Bronze ingestion pipeline
@@ -109,7 +117,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 
 ## 📁 Repository Structure
 
-Folder names such as `.Lakehouse`, `.Notebook`, and `.DataPipeline` are created automatically by Fabric Git integration. Only item definitions are stored here. Table data is not in Git.
+Folder names such as `.Lakehouse`, `.Notebook`, and `.DataPipeline` are created automatically by Fabric Git integration. Only item definitions are stored here. Table data, connections and the Phase 5 deployment pipeline (`dp_bpo_contact_center`) are not in Git.
 
 ```text
 BPO-Contact-Center-Optimization/
@@ -118,14 +126,13 @@ BPO-Contact-Center-Optimization/
 ├── nb_phase0_data_augmentation.Notebook/   # Phase 0: builds the 180,000-row synthetic source
 ├── pl_ingest_bpo_tickets.DataPipeline/     # Phase 1: parameterized incremental pipeline, HTTP source to Bronze Delta table
 ├── nb_setup_control_table.Notebook/        # Phase 1: creates control.load_log and update_watermark()
+├── nb_log_pipeline_alert.Notebook          # Phase 1: Writes one alert row per pipeline failure to control.pipeline_alerts
 ├── nb_phase2_silver_profile.Notebook       # Phase 2: Read-only profile of Bronze (shape, nulls, value ranges)
 ├── nb_phase2_silver_build.Notebook         # Phase 2: Silver build: clean, quarantine, deduplicate, write, verify
-├── nb_log_pipeline_alert.Notebook          # Phase 2: Writes one alert row per pipeline failure to control.pipeline_alerts
 ├── nb_phase2b_gold_build.Notebook          # Phase 2B: Builds Gold dimensions and fact table
 ├── sm_bpo_contact_center.SemanticModel/    # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
 ├── rpt_bpo_contact_center.Report/          # Phase 3 and 3B: Power BI report (starter, then full dashboard)
-├── docs/screenshots/                       # Phase 3, 3B and 4 evidence screenshots
-├── docs/diagnostics/                       # Phase 4: DAX Studio query files and cold vs warm comparison note
+├── docs/screenshots/                       # Phase 3, 3B, 4 and 5 evidence screenshots
 └── README.md
 ```
 
