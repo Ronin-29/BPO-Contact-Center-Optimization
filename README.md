@@ -2,6 +2,30 @@
 
 An end-to-end data engineering and analytics solution built on Microsoft Fabric. This project processes multi-year customer interaction data using a Medallion Architecture, optimizing query performance via Direct Lake mode, and enforcing robust data governance.
 
+## 📊 Dashboard Preview
+
+A three-page Power BI report on a Direct Lake semantic model, built on **synthetic data** (1 Jan to 2 Mar 2026; March is a partial month). Screenshots are from the Test workspace (TEST2).
+
+> **Why screenshots and not a live link?** The semantic model uses row-level security, which Power BI's Publish to web does not support, and the project runs on a temporary Fabric trial. The report is fully interactive in Fabric: month buttons filter all pages, and the page buttons navigate between them.
+
+### Page 1: Overview
+![Overview page](docs/screenshots/phase3b_page1_overview.png)
+Six KPI cards, daily demand, how interactions end, CSAT rating distribution, handle time by queue, and interactions by channel.
+
+### Page 2: Queues & Channels
+![Queues and Channels page](docs/screenshots/phase3b_page2_queues_channels.png)
+Abandonment and resolution rates by queue and by channel, with queue and channel filter buttons.
+
+### Page 3: Quality & CSAT
+![Quality and CSAT page](docs/screenshots/phase3b_page3_quality_csat.png)
+CSAT by queue and channel, top-box rate by queue, and a queue scorecard.
+
+### What the data shows
+- **4,925** cleaned interactions: **32.5%** resolved, **16.9%** abandoned, average CSAT **3.06 / 5**, top box (rating 4 or 5) **41.6%**.
+- Performance is nearly identical across queues and channels (for example, abandonment 16.2 to 17.9%). No single queue stands out, which is expected for generated data. The point of the project is the pipeline, model and report design, not the business findings.
+
+---
+
 ## 🏗️ Architecture Overview
 The pipeline follows a structured Medallion Architecture managed natively via Microsoft Fabric Git Integration:
 * **Bronze Layer:** Parameterized incremental ingestion of raw operational files into Delta tables using Data Factory.
