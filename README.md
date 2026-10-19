@@ -24,7 +24,7 @@ CSAT by queue and channel, top-box rate by queue, and a queue scorecard.
 
 A fully interactive three-page Power BI report built on a Direct Lake semantic model using synthetic data. 
 
-<video src="docs/screenshots/phase3b_recording_rpt_bpo_contact_center.mp4" controls width="100%" muted autoplay loop></video>
+https://github.com/user-attachments/assets/5bf76196-1763-4fe8-abb8-7af514909602
 
 ### What the data shows
 - **4,925** cleaned interactions: **32.5%** resolved, **16.9%** abandoned, average CSAT **3.06 / 5**, top box (rating 4 or 5) **41.6%**.
