@@ -20,6 +20,12 @@ Abandonment and resolution rates by queue and by channel, with queue and channel
 ![Quality and CSAT page](docs/screenshots/phase3b_page3_quality_csat.png)
 CSAT by queue and channel, top-box rate by queue, and a queue scorecard.
 
+### 📊 Dashboard Preview
+
+A fully interactive three-page Power BI report built on a Direct Lake semantic model using synthetic data. 
+
+![BPO Dashboard Demo](docs/screenshots/phase3b_recording_rpt_bpo_contact_center.mp4)
+
 ### What the data shows
 - **4,925** cleaned interactions: **32.5%** resolved, **16.9%** abandoned, average CSAT **3.06 / 5**, top box (rating 4 or 5) **41.6%**.
 - Performance is nearly identical across queues and channels (for example, abandonment 16.2 to 17.9%). No single queue stands out, which is expected for generated data. The point of the project is the pipeline, model and report design, not the business findings.
