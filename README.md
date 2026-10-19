@@ -106,7 +106,9 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** One page with 6 KPI cards (Total Interactions, Avg Handle Time, Avg CSAT, CSAT Top Box %, Resolution Rate, Abandonment Rate), a monthly chart, a channel chart, a queue table, and Queue and Channel slicers. Unknown queue/channel members stay visible so totals match 4,925.
 - **Verified:** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
 - **Known limitation:** Data is synthetic and covers 1 Jan to 2 Mar 2026 (March is partial), so differences between queues and channels are not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
-- **Evidence:** screenshots in `docs/screenshots/`
+- **Evidence:**
+  ![RLS]( docs/screenshots/phase3_03_rls_roles.png)
+  ![Performance Analyzer](docs/screenshots/phase3_05_performance_analyzer.png)
 
 ### Phase 4: Performance Profiling ✅
 - **Goal:** Measure how fast the semantic model answers queries, and compare a first-use (cold) query with repeated (warm) queries.
@@ -115,6 +117,8 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
 - **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching. Timings were measured on the first trial, before the rebuild, and were not repeated.
 - **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`; cold-run and warm-run screenshots in `docs/screenshots/`. The 2,420 ms first run is shown only in the cold-run screenshot.
+![Performance Profiling](docs/screenshots/phase4_01_cold_run.png)
+![Performance Profiling](docs/screenshots/phase4_01_warm_run.png)
 
 ### Rebuild from Source Control ✅
 
@@ -130,7 +134,10 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** Three working stages, each with its own lakehouse data, semantic model and report.
 - **Verified:** Same counts in all three stages: Bronze 180,000, Silver 4,925, quarantine 11,675, dimensions 40 / 4 / 5 / 1,461, fact 4,925. Report KPIs in Test and Production match Development. After the repoint, the lineage view shows the Production report, model, SQL endpoint and lakehouse all in PROD2. Row-level security was tested with "Test as role" in Development only. 
 - **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment.
-- **Evidence:** screenshots in `docs/screenshots/`
+- **Evidence:** 
+![Deployment]( docs/screenshots/phase5_01_pipeline_three_stages.png)
+![Deployment]( docs/screenshots/phase5_02_prod2_list_model_different.png)
+![Deployment](docs/screenshots/phase5_03_prod2_model_lineage_after_repoint.png)
   
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
