@@ -106,7 +106,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Output:** One page with 6 KPI cards (Total Interactions, Avg Handle Time, Avg CSAT, CSAT Top Box %, Resolution Rate, Abandonment Rate), a monthly chart, a channel chart, a queue table, and Queue and Channel slicers. Unknown queue/channel members stay visible so totals match 4,925.
 - **Verified:** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
 - **Known limitation:** Data is synthetic and covers 1 Jan to 2 Mar 2026 (March is partial), so differences between queues and channels are not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
-- **Evidence:**
+- **Evidence:** The evidence screenshot for RLS verification and Performance Analyzer reflect an earlier version of the layout, but all metrics and security boundaries have been fully validated against the current multi-page dashboard.
   ![RLS]( docs/screenshots/phase3_03_rls_roles.png)
   ![Performance Analyzer](docs/screenshots/phase3_05_performance_analyzer.png)
 
