@@ -62,6 +62,13 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Verified:** 180,000 rows read back; 5,376 rows with `CSAT_Rating = 'Five'`; 3,704 null `Agent_ID`. Both counts are above the injected rates because the seed already had some dirty values.
 - **Known limitation:** Both injections used the same random seed, so the two anomalies probably overlap heavily.
 
+### Phase 0B: Data Fix ✅
+- **Goal:** Replace the repeated test data with a realistic 3-year dataset where every ticket is unique.
+- **Method:** Gave every row its own Interaction_ID, built Timestamp from a daily date spine plus a random time of day, and used separate random seeds for the injected data problems (text CSAT values, missing Agent_ID, day-first dates). Reloaded through the pipeline after resetting the watermark.
+- **Output:** 180,000 unique tickets from 2024-01-01 to 2026-12-31.
+- **Verified:** Silver 169,016 rows (no duplicate IDs), quarantine 10,984, Gold fact table 169,016, no orphan keys, report total matches.
+- **Known limitation:** Reading staging through the SQL endpoint right after it changes can return the old data for a short time. The first reload after the fix loaded old data and needed a clean rerun.
+
 ### Phase 1: Bronze Ingestion Pipeline ✅
 - **Goal:** Load raw ticket data into Bronze incrementally, so each run only picks up rows newer than the last load.
 - **Method:** Pipeline `pl_ingest_bpo_tickets` runs 4 activities in order: `cp_http_to_staging` (HTTP CSV to `dbo.stg_customer_tickets`, Overwrite), `lkp_get_watermark` (reads `control.load_log`), `cp_staging_to_bronze` (T-SQL filter `try_cast(sim_date AS DATE) > watermark`, Append to `dbo.bronze_customer_tickets`), and `nb_update_watermark` (runs `nb_setup_control_table` to save the new newest date).
