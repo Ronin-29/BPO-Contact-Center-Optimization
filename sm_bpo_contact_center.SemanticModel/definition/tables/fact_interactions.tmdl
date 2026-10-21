@@ -3,10 +3,12 @@ table fact_interactions
 	sourceLineageTag: [dbo].[fact_interactions]
 
 	measure 'Total Interactions' = COUNTROWS(fact_interactions)
-		formatString: 0
+		formatString: #,0
 		lineageTag: 344651d7-785d-4013-9305-9e5bf5c18104
 
 		changedProperty = Name
+
+		changedProperty = FormatString
 
 	measure 'Avg Talk Time (sec)' = AVERAGE(fact_interactions[Talk_Time_Sec])
 		formatString: 0.00
@@ -53,7 +55,7 @@ table fact_interactions
 		changedProperty = DisplayFolder
 
 	measure 'Rated Interactions' = COUNT(fact_interactions[CSAT_Rating])
-		formatString: 0
+		formatString: #,0
 		displayFolder: Customer Satisfaction
 		lineageTag: 94787b1b-4bc6-4941-9e15-c33c25c1bcf6
 
@@ -61,14 +63,18 @@ table fact_interactions
 
 		changedProperty = DisplayFolder
 
+		changedProperty = FormatString
+
 	measure 'Resolved Interactions' = CALCULATE([Total Interactions], fact_interactions[Status] = "Resolved")
-		formatString: 0
+		formatString: #,0
 		displayFolder: Outcomes
 		lineageTag: a5b8d583-0416-463c-ac0e-71414bb25df8
 
 		changedProperty = Name
 
 		changedProperty = DisplayFolder
+
+		changedProperty = FormatString
 
 	measure 'Resolution Rate' = DIVIDE([Resolved Interactions], [Total Interactions])
 		formatString: 0.0%;-0.0%;0.0%
@@ -82,13 +88,15 @@ table fact_interactions
 		changedProperty = FormatString
 
 	measure 'Abandoned Interactions' = CALCULATE([Total Interactions], fact_interactions[Status] = "Abandoned")
-		formatString: 0
+		formatString: #,0
 		displayFolder: Outcomes
 		lineageTag: a1abdc88-7504-4509-a84d-3fe958488906
 
 		changedProperty = Name
 
 		changedProperty = DisplayFolder
+
+		changedProperty = FormatString
 
 	measure 'Abandonment Rate' = DIVIDE([Abandoned Interactions], [Total Interactions])
 		formatString: 0.0%;-0.0%;0.0%
@@ -116,6 +124,283 @@ table fact_interactions
 		changedProperty = Name
 
 		changedProperty = FormatString
+
+	measure 'Sub Date Range' =
+			
+			VAR FirstDay = MIN ( fact_interactions[interaction_timestamp] )
+			VAR LastDay  = MAX ( fact_interactions[interaction_timestamp] )
+			RETURN
+			IF (
+			    ISBLANK ( FirstDay ),
+			    "No data for this selection",
+			    FORMAT ( FirstDay, "d mmm yyyy" ) & " to "
+			        & FORMAT ( LastDay, "d mmm yyyy" ) & " · synthetic data"
+			)
+		displayFolder: Subtitles - Overview
+		lineageTag: 2b436c28-5293-470d-802b-1206fbe6aac4
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+	measure 'Avg Interactions per Day' =
+			
+			DIVIDE ( [Total Interactions], DISTINCTCOUNT ( fact_interactions[date_key] ) )
+		displayFolder: Subtitles - Overview
+		lineageTag: 9253917b-19a0-432e-981c-e640614cdd53
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Min Interactions per Day' =
+			
+			MINX ( VALUES ( fact_interactions[date_key] ), [Total Interactions] )
+		formatString: 0
+		displayFolder: Subtitles - Overview
+		lineageTag: 86ab111b-8ad3-47e1-b58d-5f332622c181
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Max Interactions per Day' =
+			
+			MAXX ( VALUES ( fact_interactions[date_key] ), [Total Interactions] )
+		formatString: 0
+		displayFolder: Subtitles - Overview
+		lineageTag: f1fe51a4-1903-403d-8a8b-c5b2b2038830
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Daily Range' =
+			
+			IF (
+			    ISBLANK ( [Total Interactions] ),
+			    "No data for this selection",
+			    FORMAT ( [Min Interactions per Day], "#,0" ) & " to "
+			        & FORMAT ( [Max Interactions per Day], "#,0" )
+			        & " a day, about " & FORMAT ( [Avg Interactions per Day], "#,0" ) & " on average"
+			)
+		displayFolder: Subtitles - Overview
+		lineageTag: 1d65d760-f3ec-4b05-b831-fb22e5b9745e
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Resolved Share' =
+			
+			IF (
+			    ISBLANK ( [Resolution Rate] ),
+			    "No data for this selection",
+			    FORMAT ( [Resolution Rate], "0.0%" ) & " of interactions are resolved"
+			)
+		displayFolder: Subtitles - Overview
+		lineageTag: c77f8981-a289-4303-b05d-98948a4cb732
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Top Box' =
+			
+			IF (
+			    ISBLANK ( [CSAT Top Box %] ),
+			    "No data for this selection",
+			    "Top box (rating 4 or 5) is " & FORMAT ( [CSAT Top Box %], "0.0%" ) & " of rated"
+			)
+		displayFolder: Subtitles - Overview
+		lineageTag: f64891c0-046a-4a55-bc85-fc64e5bd1cce
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Handle Time Range' =
+			
+			VAR Lowest  = MINX ( VALUES ( dim_queue[Queue_Name] ), [Avg Handle Time (sec)] )
+			VAR Highest = MAXX ( VALUES ( dim_queue[Queue_Name] ), [Avg Handle Time (sec)] )
+			RETURN
+			IF (
+			    ISBLANK ( Lowest ),
+			    "No data for this selection",
+			    "From " & FORMAT ( Lowest, "#,0" ) & " to " & FORMAT ( Highest, "#,0" ) & " sec across queues"
+			)
+		displayFolder: Subtitles - Overview
+		lineageTag: 51a55b70-dfb1-4e9b-a040-1919b95b1d3d
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub No Channel' =
+			
+			VAR NoChannel = CALCULATE ( [Total Interactions], dim_channel[Channel] = "Unknown" )
+			RETURN
+			IF (
+			    ISBLANK ( [Total Interactions] ),
+			    "No data for this selection",
+			    FORMAT ( NoChannel, "#,0" ) & " interactions ("
+			        & FORMAT ( DIVIDE ( NoChannel, [Total Interactions] ), "0.0%" )
+			        & ") have no channel"
+			)
+		displayFolder: Subtitles - Overview
+		lineageTag: 8d52d1f0-6049-482e-bdee-e16633de775e
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Abandon by Queue' =
+			
+			VAR Lowest  = MINX ( VALUES ( dim_queue[Queue_Name] ), [Abandonment Rate] )
+			VAR Highest = MAXX ( VALUES ( dim_queue[Queue_Name] ), [Abandonment Rate] )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( Lowest ), "No data for this selection",
+			    Lowest = Highest, FORMAT ( Lowest, "0.0%" ) & " for the selected queue",
+			    "From " & FORMAT ( Lowest, "0.0%" ) & " to " & FORMAT ( Highest, "0.0%" ) & " across queues"
+			)
+		displayFolder: Subtitles - Queues & Channels
+		lineageTag: b6eeefdb-01bc-4b95-b946-bd29de11877e
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+	measure 'Sub Resolve by Queue' =
+			
+			VAR Lowest  = MINX ( VALUES ( dim_queue[Queue_Name] ), [Resolution Rate] )
+			VAR Highest = MAXX ( VALUES ( dim_queue[Queue_Name] ), [Resolution Rate] )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( Lowest ), "No data for this selection",
+			    Lowest = Highest, FORMAT ( Lowest, "0.0%" ) & " for the selected queue",
+			    "From " & FORMAT ( Lowest, "0.0%" ) & " to " & FORMAT ( Highest, "0.0%" ) & " across queues"
+			)
+		displayFolder: Subtitles - Queues & Channels
+		lineageTag: 1eefa376-90dc-40c5-89ca-9778a29e666a
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Abandon by Channel' =
+			
+			VAR ByChannel = ADDCOLUMNS ( VALUES ( dim_channel[Channel] ), "@Rate", [Abandonment Rate] )
+			VAR HighRate  = MAXX ( ByChannel, [@Rate] )
+			VAR LowRate   = MINX ( ByChannel, [@Rate] )
+			VAR HighName  = CONCATENATEX ( FILTER ( ByChannel, [@Rate] = HighRate ), dim_channel[Channel], ", " )
+			VAR LowName   = CONCATENATEX ( FILTER ( ByChannel, [@Rate] = LowRate ), dim_channel[Channel], ", " )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( HighRate ), "No data for this selection",
+			    HighRate = LowRate, HighName & " at " & FORMAT ( HighRate, "0.0%" ),
+			    HighName & " highest (" & FORMAT ( HighRate, "0.0%" ) & "), "
+			        & LowName & " lowest (" & FORMAT ( LowRate, "0.0%" ) & ")"
+			)
+		displayFolder: Subtitles - Queues & Channels
+		lineageTag: 8b419543-ae36-429e-806a-d2d4d05bf268
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Resolve by Channel' =
+			
+			VAR ByChannel = ADDCOLUMNS ( VALUES ( dim_channel[Channel] ), "@Rate", [Resolution Rate] )
+			VAR HighRate  = MAXX ( ByChannel, [@Rate] )
+			VAR LowRate   = MINX ( ByChannel, [@Rate] )
+			VAR HighName  = CONCATENATEX ( FILTER ( ByChannel, [@Rate] = HighRate ), dim_channel[Channel], ", " )
+			VAR LowName   = CONCATENATEX ( FILTER ( ByChannel, [@Rate] = LowRate ), dim_channel[Channel], ", " )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( HighRate ), "No data for this selection",
+			    HighRate = LowRate, HighName & " at " & FORMAT ( HighRate, "0.0%" ),
+			    HighName & " highest (" & FORMAT ( HighRate, "0.0%" ) & "), "
+			        & LowName & " lowest (" & FORMAT ( LowRate, "0.0%" ) & ")"
+			)
+		displayFolder: Subtitles - Queues & Channels
+		lineageTag: bd6f2d64-4449-483d-90b9-1c032c255784
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub CSAT by Queue' =
+			
+			VAR ByQueue   = ADDCOLUMNS ( VALUES ( dim_queue[Queue_Name] ), "@Score", [Avg CSAT] )
+			VAR HighScore = MAXX ( ByQueue, [@Score] )
+			VAR LowScore  = MINX ( ByQueue, [@Score] )
+			VAR HighName  = CONCATENATEX ( FILTER ( ByQueue, [@Score] = HighScore ), dim_queue[Queue_Name], ", " )
+			VAR LowName   = CONCATENATEX ( FILTER ( ByQueue, [@Score] = LowScore ), dim_queue[Queue_Name], ", " )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( HighScore ), "No data for this selection",
+			    HighScore = LowScore, HighName & " at " & FORMAT ( HighScore, "0.00" ),
+			    "Range " & FORMAT ( LowScore, "0.00" ) & " to " & FORMAT ( HighScore, "0.00" )
+			        & ": " & LowName & " lowest, " & HighName & " highest"
+			)
+		displayFolder: Subtitles - Quality & CSAT
+		lineageTag: 22f1cff6-9e04-49eb-8fa1-b95dee859a2f
+
+		changedProperty = Name
+
+		changedProperty = DisplayFolder
+
+	measure 'Sub CSAT by Channel' =
+			
+			VAR ByChannel = ADDCOLUMNS ( VALUES ( dim_channel[Channel] ), "@Score", [Avg CSAT] )
+			VAR HighScore = MAXX ( ByChannel, [@Score] )
+			VAR LowScore  = MINX ( ByChannel, [@Score] )
+			VAR HighName  = CONCATENATEX ( FILTER ( ByChannel, [@Score] = HighScore ), dim_channel[Channel], ", " )
+			VAR LowName   = CONCATENATEX ( FILTER ( ByChannel, [@Score] = LowScore ), dim_channel[Channel], ", " )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( HighScore ), "No data for this selection",
+			    HighScore = LowScore, HighName & " at " & FORMAT ( HighScore, "0.00" ),
+			    "Range " & FORMAT ( LowScore, "0.00" ) & " to " & FORMAT ( HighScore, "0.00" )
+			        & ": " & LowName & " lowest, " & HighName & " highest"
+			)
+		displayFolder: Subtitles - Quality & CSAT
+		lineageTag: 52cf5bd5-6893-4440-a54a-26aa0e7f9b51
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
+
+	measure 'Sub Top Box by Queue' =
+			
+			VAR ByQueue  = ADDCOLUMNS ( VALUES ( dim_queue[Queue_Name] ), "@Rate", [CSAT Top Box %] )
+			VAR HighRate = MAXX ( ByQueue, [@Rate] )
+			VAR LowRate  = MINX ( ByQueue, [@Rate] )
+			VAR HighName = CONCATENATEX ( FILTER ( ByQueue, [@Rate] = HighRate ), dim_queue[Queue_Name], ", " )
+			VAR LowName  = CONCATENATEX ( FILTER ( ByQueue, [@Rate] = LowRate ), dim_queue[Queue_Name], ", " )
+			RETURN
+			SWITCH (
+			    TRUE (),
+			    ISBLANK ( HighRate ), "No data for this selection",
+			    HighRate = LowRate, HighName & " at " & FORMAT ( HighRate, "0.0%" ),
+			    HighName & " highest (" & FORMAT ( HighRate, "0.0%" ) & "), "
+			        & LowName & " lowest (" & FORMAT ( LowRate, "0.0%" ) & ")"
+			)
+		displayFolder: Subtitles - Quality & CSAT
+		lineageTag: 38f2d2dd-6a20-4d69-be23-43a4d4c0829e
+
+		changedProperty = DisplayFolder
+
+		changedProperty = Name
 
 	column Interaction_ID
 		dataType: string

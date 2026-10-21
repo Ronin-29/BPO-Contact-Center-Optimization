@@ -1,0 +1,8 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "1e2bbc32fc033a6af90a",
+  "displayName": "Quality & CSAT",
+  "displayOption": "ActualSize",
+  "height": 720,
+  "width": 1280
+}
