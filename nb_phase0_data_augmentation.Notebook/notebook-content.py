@@ -263,6 +263,19 @@ display(notebookutils.fs.ls("Files/landing/bronze_customer_tickets_raw/"))
 
 # CELL ********************
 
+# List the files and print each name with its size in MB
+for f in notebookutils.fs.ls("Files/landing/bronze_customer_tickets_raw/"):
+    print(f.name, "-", round(f.size / 1024 / 1024, 2), "MB")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 df_check = spark.read.option("header", True).csv("Files/landing/bronze_customer_tickets_raw/")
 print("Rows written:", df_check.count())
 
