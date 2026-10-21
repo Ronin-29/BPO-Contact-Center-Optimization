@@ -4,15 +4,13 @@ An end-to-end data engineering and analytics solution built on Microsoft Fabric.
 
 ## 📊 Dashboard Preview
 
-> Note: the screenshots below were taken before the Phase 0B data fix (4,925 interactions, 1 Jan to 2 Mar 2026). They will be replaced when the report is rebuilt on the new data.
+A three-page Power BI report on a Direct Lake semantic model, built on **synthetic data** (1 Jan 2024 to 31 Dec 2026, 169,016 interactions). Screenshots are from the development workspace (DEV2).
 
-A three-page Power BI report on a Direct Lake semantic model, built on **synthetic data** (1 Jan to 2 Mar 2026; March is a partial month). Screenshots are from the Test workspace (TEST2).
-
-> **Why screenshots and not a live link?** The semantic model uses row-level security, which Power BI's Publish to web does not support, and the project runs on a temporary Fabric trial. The report is fully interactive in Fabric: month buttons filter all pages, and the page buttons navigate between them.
+> **Why screenshots and not a live link?** The semantic model uses row-level security, which Power BI's Publish to web does not support, and the project runs on a temporary Fabric trial. The report is fully interactive in Fabric: the year tiles and month dropdown filter all pages, and the page buttons navigate between them.
 
 ### Page 1: Overview
 ![Overview page](docs/screenshots/phase3b_page1_overview.png)
-Six KPI cards, daily demand, how interactions end, CSAT rating distribution, handle time by queue, and interactions by channel.
+Six KPI cards, daily demand, how interactions end, CSAT rating distribution, handle time by queue, and interactions by channel. The subtitles are calculated by DAX measures and change with the slicers.
 
 ### Page 2: Queues & Channels
 ![Queues and Channels page](docs/screenshots/phase3b_page2_queues_channels.png)
@@ -26,11 +24,12 @@ CSAT by queue and channel, top-box rate by queue, and a queue scorecard.
 
 A fully interactive three-page Power BI report built on a Direct Lake semantic model using synthetic data. 
 
-https://github.com/user-attachments/assets/5bf76196-1763-4fe8-abb8-7af514909602
+https://github.com/user-attachments/assets/3fab7bce-d51d-4036-95be-d2b579a3bdc2
 
 ### What the data shows
-- **4,925** cleaned interactions: **32.5%** resolved, **16.9%** abandoned, average CSAT **3.06 / 5**, top box (rating 4 or 5) **41.6%**.
-- Performance is nearly identical across queues and channels (for example, abandonment 16.2 to 17.9%). No single queue stands out, which is expected for generated data. The point of the project is the pipeline, model and report design, not the business findings.
+- **169,016** cleaned interactions over three years (1 Jan 2024 to 31 Dec 2026), about 154 a day: **32.4%** resolved, **17.1%** abandoned, average CSAT **3.08 / 5**, top box (rating 4 or 5) **42.2%**, average handle time **785 seconds**. The three years are almost the same: 56,543, 56,245 and 56,228 interactions.
+- Queues and channels are close to each other: abandonment runs from 16.3% (Retention) to 18.0% (General), resolution from 31.3% to 33.3%, and average CSAT from 2.98 (General) to 3.18 (Tech Support). These gaps are small and the data is generated, so they are not business findings. The point of the project is the pipeline, model and report design.
+- 13.5% of interactions have no channel and 16.8% have no queue. They stay visible as "Unknown", so the totals match.
 
 ---
 
@@ -107,18 +106,25 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Goal:** Build a semantic model on the Gold star schema, with relationships, DAX measures and row-level security (RLS), reading the Delta tables directly in Direct Lake mode.
 - **Method:** Created `sm_bpo_contact_center` as Direct Lake on SQL endpoint from the five Gold tables. Four many-to-one, single-direction relationships from `fact_interactions` to each dimension, with `dim_date` marked as the date table. Direct Lake Behavior is set to Direct Lake Only, so a query that cannot be served from the Delta files shows an error instead of silently falling back to DirectQuery. Key and helper columns are hidden, `month_name` and `day_name` have sort-by columns, and Discourage implicit measures is on. 10 explicit DAX measures sit in display folders (Time Metrics, Customer Satisfaction, Outcomes). 4 RLS roles (`RLS - Billing`, `RLS - General`, `RLS - Retention`, `RLS - Tech Support`) each filter `dim_queue` by `Queue_Name`. Testing the roles needed a fixed-identity cloud connection (OAuth 2.0, SSO off), because "Test as role" does not work with the Direct Lake SSO default.
 - **Output:** Semantic model `sm_bpo_contact_center` and a starter report `rpt_bpo_contact_center` (card, queue table, monthly column chart).
-- **Verified (original 4,925-row data):** Total Interactions = 4,925, matching `fact_interactions`. Viewing as `RLS - Billing` shows only Billing (1,655), and viewing as `RLS - Retention` shows only Retention (811). Months sort January to March, not alphabetically. Performance analyzer showed no errors on any visual under Direct Lake Only, so there was no fallback to DirectQuery. After Phase 0B the model was refreshed on the new data and Total Interactions = 169,016, matching `fact_interactions`. The RLS roles were not re-tested on the new data.
+- **Verified (original 4,925-row data):** Total Interactions = 4,925, matching `fact_interactions`. Viewing as `RLS - Billing` shows only Billing (1,655), and viewing as `RLS - Retention` shows only Retention (811). Months sort January to March, not alphabetically. Performance analyzer showed no errors on any visual under Direct Lake Only, so there was no fallback to DirectQuery. After Phase 0B the model was refreshed on the new data and Total Interactions = 169,016, matching `fact_interactions`. The RLS roles were re-tested on the new data in Phase 3C.
 - **Known limitation:** Interactions with an Unknown queue (828 originally, 28,447 after Phase 0B) are not visible to any queue role, by design. The roles have no members assigned (testing used "Test as role" only). Avg Handle Time does not equal Avg Talk Time + Avg Hold Time, because Avg Hold Time skips interactions with no hold value, while handle time counts a missing hold as 0. Resolution Rate divides by all interactions, including Open ones. Abandonment Rate counts only the "Abandoned" status, and "Dropped" is kept separate. The fixed-identity connection `conn_bpo_lakehouse_fixed` is a Fabric account setting and is not stored in Git. The report is a starter with three visuals, and the full dashboard is Phase 3B.
 
-### Phase 3B: Power BI Report ✅
+### Phase 3B: Power BI Report, first version ✅
 - **Goal:** Build a one-page contact center dashboard on top of the Direct Lake semantic model, with every number coming from model measures.
 - **Method:** Built `rpt_bpo_contact_center` in the Fabric web editor as a thin report connected to `sm_bpo_contact_center`. Added the measure `CSAT Top Box %` (ratings of 4 or 5 divided by rated interactions, so unrated interactions are excluded).
 - **Output:** One page with 6 KPI cards (Total Interactions, Avg Handle Time, Avg CSAT, CSAT Top Box %, Resolution Rate, Abandonment Rate), a monthly chart, a channel chart, a queue table, and Queue and Channel slicers. Unknown queue/channel members stay visible so totals match 4,925.
-- **Verified:** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
+- **Verified (original 4,925-row data):** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
 - **Known limitation:** Data is synthetic and covers 1 Jan to 2 Mar 2026 (March is partial), so differences between queues and channels are not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
 - **Evidence:** The evidence screenshot for RLS verification and Performance Analyzer reflect an earlier version of the layout, but all metrics and security boundaries have been fully validated against the current multi-page dashboard.
   ![RLS]( docs/screenshots/phase3_03_rls_roles.png)
   ![Performance Analyzer](docs/screenshots/phase3_05_performance_analyzer.png)
+
+### Phase 3C: Redesigned report rebuilt on the full data ✅
+- **Goal:** Rebuild the three-page navy report in the Git-connected workspace on the new 169,016-row data, with no hard-coded numbers in the text.
+- **Method:** The three-page design was first built in the test workspace on the old data, so it was copied into DEV2 with Semantic Link Labs (`clone_report`) and bound to the DEV2 model. Replaced the month tiles with year tiles plus a month dropdown, because month tiles alone would add the same month of three years together. Moved every subtitle that shows a number, and the header date line, into DAX measures (display folder "Subtitles") connected through the subtitle "Field value" setting, so the text follows the slicers. Added a thousands separator to the count measures.
+- **Output:** `rpt_bpo_contact_center` (Overview, Queues & Channels, Quality & CSAT) and 16 new measures in `sm_bpo_contact_center` (13 text measures for the subtitles and date line, 3 helper measures for the daily average, minimum and maximum).
+- **Verified:** Every card and chart was checked against SQL queries on the SQL analytics endpoint (overall, by queue, by channel, by year). Total 169,016; Avg Handle Time 785.05; Avg CSAT 3.08; CSAT Top Box 42.2%; Resolution Rate 32.4%; Abandonment Rate 17.1%; yearly counts 56,543 / 56,245 / 56,228. Row-level security retested on the new data: Billing 56,769, General 28,284, Retention 27,631, Tech Support 27,885.
+- **Known limitation:** The date table covers four years but the data covers three, so the year slicer is filtered by hand to 2024 to 2026. A later year (for example the January 2027 test batch) stays hidden until that filter is changed. The four RLS roles do not include the Unknown queue, so those 28,447 interactions are hidden from every role.
 
 ### Phase 4: Performance Profiling ✅
 - **Goal:** Measure how fast the semantic model answers queries, and compare a first-use (cold) query with repeated (warm) queries.
@@ -158,6 +164,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 2B: Gold star schema
 - [X] Phase 3: Direct Lake semantic model + RLS
 - [X] Phase 3B: Power BI report (contact center dashboard)
+- [x] Phase 3C: Redesigned report rebuilt on the full data
 - [X] Phase 4: Performance profiling
 - [X] Rebuild from source control
 - [X] Phase 5: Deployment (Development, Test, Production)
