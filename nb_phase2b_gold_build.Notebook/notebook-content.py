@@ -195,3 +195,19 @@ print("Unknown queue rows:  ", fact.join(spark.table("dbo.dim_queue").filter("Qu
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# Cell 7: Count check (new cell at the bottom)
+
+for t in ["dim_agent", "dim_channel", "dim_queue", "dim_date", "fact_interactions"]:
+    print(t, ":", spark.table("dbo." + t).count())
+
+print("silver_customer_tickets :", spark.table("dbo.silver_customer_tickets").count())
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

@@ -258,3 +258,36 @@ quar_t.groupBy("quarantine_reason").count().orderBy("count", ascending=False).sh
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# MARKDOWN ********************
+
+# Cell J: My own check (new cell at the bottom, read only)
+
+# CELL ********************
+
+from pyspark.sql import functions as F
+
+silver = spark.table("dbo.silver_customer_tickets")
+quar = spark.table("dbo.quarantine_customer_tickets")
+bronze_rows = spark.table("dbo.bronze_customer_tickets").count()
+
+s_rows = silver.count()
+q_rows = quar.count()
+print("Silver rows:", s_rows)
+print("Silver distinct IDs:", silver.select("Interaction_ID").distinct().count())
+print("Quarantine rows:", q_rows)
+print("Silver + quarantine:", s_rows + q_rows, "| Bronze:", bronze_rows)
+
+silver.select(F.min("Timestamp"), F.max("Timestamp")).show(truncate=False)
+print("Silver null Timestamp:", silver.filter(F.col("Timestamp").isNull()).count())
+print("Silver null Agent_ID:", silver.filter(F.col("Agent_ID").isNull()).count())
+print("Silver negative Talk_Time_Sec:", silver.filter(F.col("Talk_Time_Sec") < 0).count())
+print("Silver Timestamp date different from sim_date:",
+      silver.filter(F.to_date("Timestamp") != F.col("sim_date")).count())
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
