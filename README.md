@@ -47,7 +47,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 * **Compute & Engineering:** Apache Spark (PySpark Notebooks) ✅
 * **Storage Engine:** Delta Lake (Parquet format) ✅
 * **Modeling & Security:** Fabric web model editor (Direct Lake semantic model, DAX measures, static row-level security roles) ✅
-* **Performance Tuning:** DAX Studio (XMLA connection, Server Timings, cold vs warm query profiling) ✅
+* **Performance Tuning:** DAX Studio (XMLA connection, Server Timings, Benchmark with cache cleared vs warm) ✅
 * **DevOps (Phase 5):** Fabric Git Integration ✅, Deployment Pipelines ✅ (manual promotion across Development, Test and Production)
 
 ---
@@ -130,14 +130,15 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Known limitation:** The date table covers four years but the data covers three, so the year slicer is filtered by hand to 2024 to 2026. A later year (for example the January 2027 test batch) stays hidden until that filter is changed. The four RLS roles do not include the Unknown queue, so those 28,447 interactions are hidden from every role.
 
 ### Phase 4: Performance Profiling ✅
-- **Goal:** Measure how fast the semantic model answers queries, and compare a first-use (cold) query with repeated (warm) queries.
-- **Method:** Connected DAX Studio to `sm_bpo_contact_center` through the XMLA endpoint and used Server Timings. Ran two saved DAX queries: a queue summary matching the report table, and a distinct count on a column no earlier query had used. Warm tests used five runs each with Clear on Run on.
-- **Output:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
-- **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
-- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching. Timings were measured on the first trial, before the rebuild and before the Phase 0B data fix, when the fact table had 4,925 rows (it now has 169,016). They were not repeated.
-- **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`; cold-run and warm-run screenshots in `docs/screenshots/`. The 2,420 ms first run is shown only in the cold-run screenshot.
-![Performance Profiling](docs/screenshots/phase4_01_cold_run.png)
-![Performance Profiling](docs/screenshots/phase4_01_warm_run.png)
+- **Goal:** Measure how fast the semantic model answers queries, with the engine cache cleared (cold) and with the cache warm.
+- **Method:** Connected DAX Studio to `sm_bpo_contact_center` through the XMLA endpoint and used its Benchmark tool, which runs one query several times with the cache cleared before each run (cold) and several times with the cache warm, and logs the timings. Ran three saved DAX queries, 10 cold and 10 warm runs each: a queue summary like the report table, a distinct count on `Interaction_ID`, and the subtitle measure `Sub Daily Range`.
+- **Output:** Three query files and a short note in `docs/diagnostics/`, and three benchmark screenshots in `docs/screenshots/`.
+- **Verified:** The first two queries gave the same results as the SQL checks (queue totals as in Phase 3C, 169,016 distinct IDs). Average total time was 10 to 23 ms in every case: queue summary 11.5 ms cold and 13.2 ms warm, distinct count 22.8 ms cold and 11.7 ms warm, subtitle measure 13.0 ms cold and 10.1 ms warm. The slowest single run was 33 ms. All queries ran without errors under Direct Lake Only, so none fell back to DirectQuery.
+- **Known limitation:** "Cold" means the engine cache was cleared before each run. It does not mean a column was loaded from OneLake, because the columns were already in memory (clearing the cache and refreshing the model did not produce that case). The timer moves in steps of about 16 ms, so only differences of two or more steps mean anything. The queue summary and the subtitle measure are the same cold and warm within that noise. Only the distinct count shows a clear gap (about 23 ms against 12 ms), because the cold runs spent time in the storage engine and the warm runs did not. One earlier first run of the distinct count took 188 ms, mostly in the formula engine; it was not repeated, so the cause is not confirmed. Queries ran as admin, so row-level security was not applied. 169,016 rows on a trial capacity is small data, so these timings say nothing about large-scale performance.
+- **Evidence:** Benchmark summary tables for the queue summary, the distinct count and the subtitle measure. The query files and note are in `docs/diagnostics/`.
+![Benchmark: queue summary](docs/screenshots/phase4_01_benchmark_queue_summary.png)
+![Benchmark: distinct count](docs/screenshots/phase4_02_benchmark_distinct_count.png)
+![Benchmark: subtitle measure](docs/screenshots/phase4_03_benchmark_subtitle_measure.png)
 
 ### Rebuild from Source Control ✅
 
