@@ -1,0 +1,7 @@
+EVALUATE
+SUMMARIZECOLUMNS(
+    dim_queue[Queue_Name],
+    "Total Interactions", [Total Interactions],
+    "Avg Handle Time (sec)", [Avg Handle Time (sec)]
+)
+ORDER BY dim_queue[Queue_Name]
