@@ -20,7 +20,7 @@ Abandonment and resolution rates by queue and by channel, with queue and channel
 ![Quality and CSAT page](docs/screenshots/phase3b_page3_quality_csat.png)
 CSAT by queue and channel, top-box rate by queue, and a queue scorecard.
 
-### 📊 Dashboard Preview
+### Short walkthrough
 
 A fully interactive three-page Power BI report built on a Direct Lake semantic model using synthetic data. 
 
@@ -55,6 +55,9 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 ## 📈 Project Status & Metrics Log
 *This section is a living log: results for each phase, with what was verified and what was not.*
 
+<details>
+<summary><b>Phase-by-phase results, verification and limitations (click to expand)</b></summary>
+  
 ### Phase 0: Data Augmentation ✅
 - **Goal:** Turn a 5,000-row messy seed CSV into a 180,000-row synthetic source, reproducibly.
 - **Method:** Loaded the seed as strings, cast `Talk_Time_Sec` with `try_cast` so bad values become null instead of causing an error, cross-joined with a 2024-01-01 to 2026-12-31 date spine, shuffled and limited to 180,000 rows, regenerated `Talk_Time_Sec` from the seed's mean and standard deviation, and injected anomalies (~2% `CSAT_Rating` set to "Five", ~1% `Agent_ID` set to null).
@@ -114,8 +117,8 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Method:** Built `rpt_bpo_contact_center` in the Fabric web editor as a thin report connected to `sm_bpo_contact_center`. Added the measure `CSAT Top Box %` (ratings of 4 or 5 divided by rated interactions, so unrated interactions are excluded).
 - **Output:** One page with 6 KPI cards (Total Interactions, Avg Handle Time, Avg CSAT, CSAT Top Box %, Resolution Rate, Abandonment Rate), a monthly chart, a channel chart, a queue table, and Queue and Channel slicers. Unknown queue/channel members stay visible so totals match 4,925.
 - **Verified (original 4,925-row data):** Cards match the model (4,925 / 788.92 / 3.06 / 32.5% / 16.9%). Top Box check: 778 + 946 = 1,724 of 4,148 rated = 41.6%. Month and channel bars each add up to 4,925. Voice + Billing slicers gave 485, matching the table. Viewing as `RLS - Billing` showed 1,655 only. Performance analyzer showed no fallback errors under Direct Lake Only (slowest first load about 1.7 s, a rough check, not the Phase 4 benchmark).
-- **Known limitation:** Data is synthetic and covers 1 Jan to 2 Mar 2026 (March is partial), so differences between queues and channels are not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
-- **Evidence:** The evidence screenshot for RLS verification and Performance Analyzer reflect an earlier version of the layout, but all metrics and security boundaries have been fully validated against the current multi-page dashboard.
+- **Known limitation:** At the time, the data was synthetic and covered only 1 Jan to 2 Mar 2026 (March was partial), so differences between queues and channels were not meaningful business insights. The slicers showed an extra (Blank) member with no rows behind it; it is hidden with an "is not blank" filter on each slicer and the cause was not confirmed. Top Box has no single official definition; this project uses 4 or 5.
+- **Evidence:** The RLS screenshot was retaken on the redesigned report with the 169,016-row data.
   ![RLS](docs/screenshots/phase3_03_rls_billing_test.png)
   ![Performance Analyzer](docs/screenshots/phase3_04_performance_analyzer.png)
 
@@ -123,7 +126,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Goal:** Rebuild the three-page navy report in the Git-connected workspace on the new 169,016-row data, with no hard-coded numbers in the text.
 - **Method:** The three-page design was first built in the test workspace on the old data, so it was copied into DEV2 with Semantic Link Labs (`clone_report`) and bound to the DEV2 model. Replaced the month tiles with year tiles plus a month dropdown, because month tiles alone would add the same month of three years together. Moved every subtitle that shows a number, and the header date line, into DAX measures (display folder "Subtitles") connected through the subtitle "Field value" setting, so the text follows the slicers. Added a thousands separator to the count measures.
 - **Output:** `rpt_bpo_contact_center` (Overview, Queues & Channels, Quality & CSAT) and 16 new measures in `sm_bpo_contact_center` (13 text measures for the subtitles and date line, 3 helper measures for the daily average, minimum and maximum).
-- **Verified:** Every card and chart was checked against SQL queries on the SQL analytics endpoint (overall, by queue, by channel, by year). Total 169,016; Avg Handle Time 785.05; Avg CSAT 3.08; CSAT Top Box 42.2%; Resolution Rate 32.4%; Abandonment Rate 17.1%; yearly counts 56,543 / 56,245 / 56,228. Row-level security retested on the new data: Billing 56,769, General 28,284, Retention 27,631, Tech Support 27,885.
+- **Verified:** The KPI cards, the queue, channel and year breakdowns, and the daily minimum, maximum and average were checked against SQL queries on the SQL analytics endpoint. Total 169,016; Avg Handle Time 785.05; Avg CSAT 3.08; CSAT Top Box 42.2%; Resolution Rate 32.4%; Abandonment Rate 17.1%; yearly counts 56,543 / 56,245 / 56,228. Row-level security retested on the new data: Billing 56,769, General 28,284, Retention 27,631, Tech Support 27,885.
 - **Known limitation:** The date table covers four years but the data covers three, so the year slicer is filtered by hand to 2024 to 2026. A later year (for example the January 2027 test batch) stays hidden until that filter is changed. The four RLS roles do not include the Unknown queue, so those 28,447 interactions are hidden from every role.
 
 ### Phase 4: Performance Profiling ✅
@@ -131,7 +134,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Method:** Connected DAX Studio to `sm_bpo_contact_center` through the XMLA endpoint and used Server Timings. Ran two saved DAX queries: a queue summary matching the report table, and a distinct count on a column no earlier query had used. Warm tests used five runs each with Clear on Run on.
 - **Output:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`.
 - **Verified:** Query results matched the report (4,925 interactions; Billing 1,655, General 816, Retention 811, Tech Support 815, Unknown 828). Warm runs took 16 to 33 ms (median 17 ms). One first-use query on a new column took 2,420 ms, and the same query took 31 ms on the rerun. No fallback errors under Direct Lake Only.
-- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching. Timings were measured on the first trial, before the rebuild and before the Phase 0B data fix, when the fact table had 4,925 rows (it now has 169,016). They were not repeated..
+- **Known limitation:** Only one cold sample. Clear Cache and a model refresh did not produce a cold run. The cause of the slow first run is probably the column loading into memory, but this is not confirmed. Warm timings move in steps of about 16 ms, so small differences are noise. Small data on a trial capacity. Queries ran as admin, so row-level security was not applied. Warm runs showed storage engine cache hits even with Clear on Run on; the cause was not confirmed, so warm timings may include query caching. Timings were measured on the first trial, before the rebuild and before the Phase 0B data fix, when the fact table had 4,925 rows (it now has 169,016). They were not repeated.
 - **Evidence:** Two query files, two saved timing files and a short comparison note in `docs/diagnostics/`; cold-run and warm-run screenshots in `docs/screenshots/`. The 2,420 ms first run is shown only in the cold-run screenshot.
 ![Performance Profiling](docs/screenshots/phase4_01_cold_run.png)
 ![Performance Profiling](docs/screenshots/phase4_01_warm_run.png)
@@ -154,6 +157,8 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 ![Deployment]( docs/screenshots/phase5_01_pipeline_three_stages.png)
 ![Deployment]( docs/screenshots/phase5_02_prod2_list_model_different.png)
 ![Deployment](docs/screenshots/phase5_03_prod2_model_lineage_after_repoint.png)
+
+  </details>
   
 ## Build Progress
 - [X] Phase 0: Synthetic data augmentation
@@ -187,7 +192,7 @@ BPO-Contact-Center-Optimization/
 ├── nb_phase2_silver_build.Notebook         # Phase 2: Silver build: clean, quarantine, deduplicate, write, verify
 ├── nb_phase2b_gold_build.Notebook          # Phase 2B: Builds Gold dimensions and fact table
 ├── sm_bpo_contact_center.SemanticModel/    # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
-├── rpt_bpo_contact_center.Report/          # Phase 3 and 3B: Power BI report (starter, then full dashboard)
+├── rpt_bpo_contact_center.Report/          # Phase 3, 3B and 3C: Power BI report (starter, first dashboard, then the redesigned three-page report)
 ├── docs/screenshots/                       # Phase 3, 3B, 4 and 5 evidence screenshots
 ├── docs/diagnostics/                       # Phase 4: DAX Studio query files and cold vs warm comparison note
 └── README.md
