@@ -144,15 +144,16 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - **Goal:** Prove the whole solution can be rebuilt from GitHub alone if a workspace is lost (the 60-day Fabric trial ended).
 - **Method:** Created a new workspace on a new trial capacity in a different region, connected it to this repo and synced all 11 items. Items arrive without data, so I re-attached the lakehouse in the 6 notebooks, created new connections, re-ran the pipeline, Silver and Gold notebooks, repointed the Direct Lake model to the new lakehouse with the semantic-link-labs function `update_direct_lake_model_connection`, and recreated the fixed-identity connection used for row-level security.
 - **Output:** A working copy of the full solution, with the updated notebook, pipeline and model definitions committed.
-- **Verified:** Every count matched the original (the 4,925-row dataset, before Phase 0B): 180,000 rows in staging and Bronze, 4,925 in Silver, 11,675 in quarantine, dimensions 40 / 4 / 5 / 1,461 and 4,925 fact rows. The report KPIs and all four RLS roles matched too.
+- **Verified:** The rebuild was done before the Phase 0B data fix, so these counts are for the first dataset (180,000 rows that repeated only 5,000 ticket IDs, so Silver kept 4,925). Every count matched the original workspace: 180,000 rows in staging and Bronze, 4,925 in Silver, 11,675 in quarantine, dimensions 40 / 4 / 5 / 1,461 and 4,925 fact rows. The report KPIs and all four RLS roles matched too. The data was replaced later in Phase 0B (169,016 in Silver); the current numbers are in Phase 0B and Phase 3C.
 - **Known limitation:** Git saves item definitions only, not data, connections or the deployment pipeline. A workspace cannot move to a capacity in another region while it holds Fabric items, so this was a rebuild, not a move. Connections had to be recreated by hand.
 
 ### Phase 5: Deployment ✅
 - **Goal:** Promote the solution from Development to Test to Production with a Fabric Deployment Pipeline, and check that each stage works with its own data.
-- **Method:** Used the rebuilt workspace (see Rebuild above) as the Development stage, named DEV2, and created two more workspaces, TEST2 and PROD2, plus one Deployment Pipeline, `dp_bpo_contact_center`. DEV2 is Git-connected; TEST2 and PROD2 are not. Deployed the 11 items from Development to Test, then from Test to Production. In Test and in Production, ran the control setup cells of `nb_setup_control_table`, the ingest pipeline, and the Silver and Gold notebooks, repointed the semantic model to that stage's lakehouse with `update_direct_lake_model_connection` (semantic-link-labs), and refreshed it.
+- **Method:** Used the rebuilt workspace (see Rebuild above) as the Development stage, named DEV2, and created two more workspaces, TEST2 and PROD2, plus one Deployment Pipeline, `dp_bpo_contact_center`. DEV2 is Git-connected; TEST2 and PROD2 are not. Deployed the 11 items from Development to Test, then from Test to Production. In Test and in Production, ran the control setup cells of `nb_setup_control_table`, the ingest pipeline, and the Silver and Gold notebooks, repointed the semantic model to that stage's lakehouse with `update_direct_lake_model_connection` (semantic-link-labs), and refreshed it. After Phase 0B and Phase 3C, the stages were redeployed (Development to Test to Production) and reloaded with the new data.
 - **Output:** Three working stages, each with its own lakehouse data, semantic model and report.
-- **Verified:** Same counts in all three stages (the 4,925-row dataset, before Phase 0B): Bronze 180,000, Silver 4,925, quarantine 11,675, dimensions 40 / 4 / 5 / 1,461, fact 4,925. Report KPIs in Test and Production match Development. After the repoint, the lineage view shows the Production report, model, SQL endpoint and lakehouse all in PROD2. Row-level security was tested with "Test as role" in Development only. 
-- **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment. After Phase 0B only Development holds the new data. Test and Production still hold the original data until their `control.load_log` watermark is reset and they are reloaded.
+- **Verified:** Same counts in all three stages on the 169,016-row dataset (after Phase 0B): Bronze 180,000 rows with 180,000 distinct IDs, Silver 169,016, dimensions 40 / 4 / 5 / 1,461, fact 169,016. The report pages were compared across the three stages and match (Overview: Total 169,016, Avg Handle Time 785.05, Avg CSAT 3.08, Top Box 42.2%, Resolution 32.4%, Abandonment 17.1%). After the repoint, the lineage view shows the report, model, SQL endpoint and lakehouse together in the same workspace in each stage. Row-level security was tested with "Test as role" in Development only (retested on the new data in Phase 3C).
+- **Known limitation:** Deployment copies items, not data, so each stage loaded its own data by running the pipeline and notebooks. The semantic model was not rebound automatically: in Production it first pointed at the Test lakehouse until it was repointed by hand. That repoint is not stored in Git or the pipeline, so Test and Production show the model as "Different from source". The model's Data source rules offered no options. The first pipeline run in Test failed once with an "invalid object" error and succeeded on rerun with no changes, probably a SQL endpoint sync delay (not confirmed). Promotion is started by hand; GitHub Actions or fabric-cicd was not built. The pipeline parameter `p_environment` keeps its default value "dev" in every stage. All three workspaces use Runtime 1.3 (Spark 3.5) with no default environment. The four roles were deployed with the model (visible on the Row-Level Security page in Test), but "Test as role" was refused in Test because the model uses the default single sign-on. The fixed-identity connection it needs is an account setting, not stored in Git or carried by deployment. 
+- **Second round (after Phase 0B and Phase 3C):** Test and Production were reloaded with the new data: delete the Bronze rows, reset the `control.load_log` watermark to 1900-01-01, rerun the pipeline, then rerun the Silver and Gold notebooks. The repoint had to be repeated, because each deployment copies the model's connection from the stage before. A report re-created by cloning is a new item, so the pipeline did not pair it with the old report of the same name; the old report was renamed before deploying and deleted afterwards.
 - **Evidence:** 
 ![Deployment]( docs/screenshots/phase5_01_pipeline_three_stages.png)
 ![Deployment]( docs/screenshots/phase5_02_prod2_list_model_different.png)
@@ -169,7 +170,7 @@ The pipeline follows a structured Medallion Architecture managed natively via Mi
 - [X] Phase 2B: Gold star schema
 - [X] Phase 3: Direct Lake semantic model + RLS
 - [X] Phase 3B: Power BI report (contact center dashboard)
-- [x] Phase 3C: Redesigned report rebuilt on the full data
+- [X] Phase 3C: Redesigned report rebuilt on the full data
 - [X] Phase 4: Performance profiling
 - [X] Rebuild from source control
 - [X] Phase 5: Deployment (Development, Test, Production)
@@ -182,19 +183,19 @@ Folder names such as `.Lakehouse`, `.Notebook`, and `.DataPipeline` are created 
 
 ```text
 BPO-Contact-Center-Optimization/
-├── BPO_Optimization_Lakehouse.Lakehouse/   # Lakehouse definition (Bronze/Silver/Gold tables live here)
-├── BPO_Spark_Environment.Environment/      # Spark environment settings
-├── nb_phase0_data_augmentation.Notebook/   # Phase 0 and 0B: builds the 180,000-row synthetic source (unique IDs, real timestamps)
-├── pl_ingest_bpo_tickets.DataPipeline/     # Phase 1: parameterized incremental pipeline, HTTP source to Bronze Delta table
-├── nb_setup_control_table.Notebook/        # Phase 1: creates control.load_log and update_watermark()
-├── nb_log_pipeline_alert.Notebook          # Phase 1: Writes one alert row per pipeline failure to control.pipeline_alerts
-├── nb_phase2_silver_profile.Notebook       # Phase 2: Read-only profile of Bronze (shape, nulls, value ranges)
-├── nb_phase2_silver_build.Notebook         # Phase 2: Silver build: clean, quarantine, deduplicate, write, verify
-├── nb_phase2b_gold_build.Notebook          # Phase 2B: Builds Gold dimensions and fact table
-├── sm_bpo_contact_center.SemanticModel/    # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
-├── rpt_bpo_contact_center.Report/          # Phase 3, 3B and 3C: Power BI report (starter, first dashboard, then the redesigned three-page report)
-├── docs/screenshots/                       # Phase 3, 3B, 4 and 5 evidence screenshots
-├── docs/diagnostics/                       # Phase 4: DAX Studio query files and cold vs warm comparison note
+├── BPO_Optimization_Lakehouse.Lakehouse/          # Lakehouse definition (Bronze/Silver/Gold tables live here)
+├── BPO_Spark_Environment.Environment/             # Spark environment settings
+├── nb_phase0_data_augmentation.Notebook/          # Phase 0 and 0B: builds the 180,000-row synthetic source (unique IDs, real timestamps)
+├── pl_ingest_bpo_tickets.DataPipeline/            # Phase 1: parameterized incremental pipeline, HTTP source to Bronze Delta table
+├── nb_setup_control_table.Notebook/               # Phase 1: creates control.load_log and update_watermark()
+├── nb_log_pipeline_alert.Notebook                 # Phase 1: Writes one alert row per pipeline failure to control.pipeline_alerts
+├── nb_phase2_silver_profile.Notebook              # Phase 2: Read-only profile of Bronze (shape, nulls, value ranges)
+├── nb_phase2_silver_build.Notebook                # Phase 2: Silver build: clean, quarantine, deduplicate, write, verify
+├── nb_phase2b_gold_build.Notebook                 # Phase 2B: Builds Gold dimensions and fact table
+├── sm_bpo_contact_center.SemanticModel/           # Phase 3: Direct Lake semantic model (relationships, measures, RLS roles)
+├── 28f29fa0-c20f-a156-448f-ecbee72827f3.Report/   # Phase 3, 3B and 3C: Power BI report (Fabric named this folder by item ID)
+├── docs/screenshots/                              # Phase 3, 3B, 4 and 5 evidence screenshots
+├── docs/diagnostics/                              # Phase 4: DAX Studio query files and cold vs warm comparison note
 └── README.md
 ```
 
